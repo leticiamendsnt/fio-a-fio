@@ -1,0 +1,17 @@
+# Registro de mudanças — Fio a Fio
+
+**Aberto em:** 10/10/2026, na verificação do M1
+**Data de status:** 06/10/2026 — commit `9e857eb` da PSW
+**Regra (plano, seção 8):** a mudança começa por pedido escrito com o que muda, em qual pacote e o efeito no escopo, no prazo e no custo. Matheus confere o pedido contra a EAP. O patrocinador aprova. As três linhas de base são atualizadas juntas.
+
+Os itens abaixo foram **entregues sem pedido**. Estão registrados para decisão. Nenhum está aprovado, e estar pronto ou agradar na tela não muda isso. Até a decisão, eles não entram no aceite de nenhum pacote.
+
+| ID | O que foi entregue | Onde, no repositório | Linha de base afetada | Pedido escrito | Efeito observado | Recomendação da equipe GPTI | Decisão do patrocinador |
+|---|---|---|---|---|---|---|---|
+| MUD-01 | **JSON Server como fonte de dados do M1.** Pasta `backend/` com `db.json` e JSON Server na porta 3001; `services/api.js` e React Query no frontend. As telas deixaram de ler `src/mocks`. | Commit `158bace`, 06/10/2026 | 1.3.4 e 1.4.7 (aceite); RT03; PENDENCIAS de 05/10, que registrava "json-server não é necessário"; tecnologia do M2 (D11, Express e MongoDB) | Não há | Sem a API, nenhuma tela abre. O `db.json` muda a cada uso (Q-12). O M1 fica parecido com uma integração do M2, mas em outra tecnologia. | PSW escreve o pedido até 13/10, com o efeito em prazo e custo. Decidir antes da D11 (DEC-2). Enquanto não houver decisão, 1.3.4 e 1.4.7 contam como falhos. | Pendente |
+| MUD-02 | **Moderação e administração com gravação.** As publicações novas nascem "pendentes" e só aparecem depois de aprovadas pelo administrador. Telas de administração gravam suspensão de usuária, moderação de publicação, desativação de aula e remoção de material. | `pages/admin/Persisted*.jsx`, `CreatePostModal.jsx`; commit `158bace` | Declaração do escopo (4.1): "moderação permanece fora"; regra 1 ("o administrador não tem função nesta fase"); 1.4.1 | Não há | Bloqueia o 1.4.1: a autora não vê a própria publicação. A única forma de retirar uma aula do catálogo passou a ser pelo administrador, não pela criadora (1.4.2). | Não aprovar. Tirar a moderação do caminho da publicação. As telas de administração ficam fora do aceite e da demonstração. | Pendente |
+| MUD-03 | **Chat com gravação.** Conversas e mensagens gravadas pela API (`ApiChatContext.jsx`). | Telas desde 03/10; gravação no commit `158bace` | Declaração do escopo: chat fora; seção 4.4: Chat "fora — não corresponde a caso de uso" | Não há | Horas de PSW gastas fora da EAP enquanto 1.4.3 não foi feito. | Não aprovar. Não investir mais horas. | Pendente |
+| MUD-04 | **Stories.** Criar e ver stories, com gravação. | `CreateStoryPage.jsx`, `StoryBar.jsx`, `StoryViewerModal.jsx` | Declaração do escopo: stories fora; UC14 a UC17 fora | Não há | Igual à MUD-03. | Não aprovar. Não investir mais horas. | Pendente |
+| MUD-05 | **Seguir e pesquisa ampla.** Botão "Seguir" no perfil; pesquisa de perfis e publicações. | `ProfilePage.jsx`, `SearchPage.jsx` | UC10 a UC13 fora; UC18 parcial (só vídeo-aulas, por título e nível) | Não há | Igual à MUD-03. | Não aprovar. Não investir mais horas. | Pendente |
+
+As telas de stories, chat, seguir e administração já existiam em 03/10 e foram registradas como fora do recorte no plano (seção 5.1.1). O que mudou em 06/10 foi a gravação dessas funções e a moderação no caminho da publicação. Por isso entram aqui agora.
