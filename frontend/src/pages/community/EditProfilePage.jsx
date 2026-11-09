@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRole } from '../../context/RoleContext';
-import { useQueryClient } from '@tanstack/react-query';
-import { updateRecord } from '../../services/api';
+import { updateRecord, deleteRecord } from '../../services/api';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, User, MapPin, Camera, Sparkles, CheckCircle2, Video, UserCheck } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Camera, Sparkles, CheckCircle2, Video, UserCheck, Trash2, AlertTriangle } from 'lucide-react';
 
 export const EditProfilePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { currentUser, currentRole, updateCurrentRole } = useRole();
+  const { currentUser, currentRole, updateCurrentRole, selectUser } = useRole();
   const queryClient = useQueryClient();
 
   const [name, setName] = useState(currentUser.name || '');
@@ -21,7 +21,6 @@ export const EditProfilePage = () => {
   const [selectedRole, setSelectedRole] = useState(currentRole === 'guest' ? 'user' : currentRole);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const isFocusRole = searchParams.get('focus') === 'role';
 
@@ -36,35 +35,70 @@ export const EditProfilePage = () => {
 
   useEffect(() => {
     if (isFocusRole) {
-      // Default auto selection to creator when navigating from 'Ensine & Monetize'
       setSelectedRole('creator');
     }
   }, [isFocusRole]);
 
-  const handleSubmit = async (e) => {
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updatedData) => {
+      return await updateRecord('users', currentUser.id, updatedData);
+    },
+    onSuccess: async (updatedUser) => {
+      queryClient.setQueryData(['users'], (users = []) =>
+        users.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+      );
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      if (selectedRole !== currentRole) updateCurrentRole(selectedRole);
+      setMessage('Perfil e tipo de conta atualizados com sucesso!');
+      setTimeout(() => navigate(selectedRole === 'creator' ? '/criador/videoaulas' : '/perfil'), 800);
+    },
+    onError: (saveError) => {
+      setError(saveError.message || 'Não foi possível salvar o perfil. Verifique se o JSON Server está ativo.');
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      await deleteRecord('users', currentUser.id);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      selectUser(null);
+      alert('Sua conta foi excluída com sucesso. Sentiremos sua falta!');
+      navigate('/');
+    },
+    onError: (delError) => {
+      setError(delError.message || 'Não foi possível excluir a conta. Tente novamente.');
+    },
+  });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!currentUser.id) {
       setError('Não foi possível identificar a conta atual.');
       return;
     }
-    setIsSaving(true);
     setError('');
-    try {
-      const updatedUser = await updateRecord('users', currentUser.id, { name, bio, location, avatar: avatarUrl, role: selectedRole });
-      queryClient.setQueryData(['users'], (users = []) => users.map(user => user.id === updatedUser.id ? updatedUser : user));
-      await queryClient.invalidateQueries({ queryKey: ['users'] });
-      if (selectedRole !== currentRole) updateCurrentRole(selectedRole);
-      setMessage('Perfil e tipo de conta atualizados com sucesso!');
-      setTimeout(() => navigate(selectedRole === 'creator' ? '/criador/videoaulas' : '/perfil'), 800);
-    } catch (saveError) {
-      setError(saveError.message || 'Não foi possível salvar o perfil. Verifique se o JSON Server está ativo.');
-    } finally {
-      setIsSaving(false);
-    }
+    updateProfileMutation.mutate({
+      name,
+      bio,
+      location,
+      avatar: avatarUrl,
+      role: selectedRole,
+    });
+  };
+
+  const handleDeleteAccount = () => {
+    if (!currentUser.id) return;
+    const confirmed = window.confirm(
+      'Atenção: Tem certeza de que deseja excluir permanentemente sua conta no Fio a Fio? Esta ação não pode ser desfeita.'
+    );
+    if (!confirmed) return;
+    deleteAccountMutation.mutate();
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-4">
+    <div className="max-w-xl mx-auto space-y-6">
       <Link to="/perfil" className="inline-flex items-center gap-1 text-xs font-bold text-[#B94F70] hover:underline">
         <ArrowLeft size={16} />
         Voltar para o Perfil
@@ -82,10 +116,14 @@ export const EditProfilePage = () => {
               {message}
             </div>
           )}
-          {error && <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl text-center">{error}</div>}
+          {error && (
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl text-center">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Profile Type Selection Box (Tipo de Perfil) */}
+            {/* Profile Type Selection Box */}
             <div
               className={`p-4 rounded-2xl border transition-all duration-300 ${
                 isFocusRole
@@ -187,10 +225,41 @@ export const EditProfilePage = () => {
               onChange={(e) => setAvatarUrl(e.target.value)}
             />
 
-            <Button type="submit" variant="primary" fullWidth size="lg" disabled={isSaving} className="bg-[#B94F70] hover:bg-[#963B58] text-white font-black">
-              Salvar Alterações
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              size="lg"
+              disabled={updateProfileMutation.isPending}
+              className="bg-[#B94F70] hover:bg-[#963B58] text-white font-black"
+            >
+              {updateProfileMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </form>
+        </CardBody>
+      </Card>
+
+      {/* Danger Zone: Account Deletion */}
+      <Card className="border-red-200 bg-red-50/30">
+        <CardBody className="p-6 space-y-4">
+          <div className="flex items-center gap-2 text-red-700 font-black text-sm">
+            <AlertTriangle size={18} />
+            <h2>Zona de Perigo — Exclusão de Conta</h2>
+          </div>
+          <p className="text-xs text-red-800/80 leading-relaxed">
+            Ao excluir sua conta, seus dados de perfil serão permanentemente removidos da plataforma Fio a Fio.
+          </p>
+          <Button
+            type="button"
+            variant="danger"
+            size="md"
+            disabled={deleteAccountMutation.isPending}
+            onClick={handleDeleteAccount}
+            className="w-full sm:w-auto"
+          >
+            <Trash2 size={16} />
+            {deleteAccountMutation.isPending ? 'Excluindo conta...' : 'Excluir Minha Conta'}
+          </Button>
         </CardBody>
       </Card>
     </div>

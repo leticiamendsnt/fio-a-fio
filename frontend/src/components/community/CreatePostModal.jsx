@@ -1,21 +1,41 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Sparkles, MessageSquare, ImagePlus, Trash2 } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRole } from '../../context/RoleContext';
 import { createRecord } from '../../services/api';
+
+const postSchema = z.object({
+  title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres.'),
+  category: z.string().min(1, 'Selecione uma categoria.'),
+  content: z.string().min(5, 'O conteúdo deve ter pelo menos 5 caracteres.'),
+});
 
 export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   const queryClient = useQueryClient();
   const { currentUser, currentRole } = useRole();
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Dicas & Tutoriais');
-  const [content, setContent] = useState('');
   const [image, setImage] = useState('');
   const [imageName, setImageName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(postSchema),
+    defaultValues: {
+      title: '',
+      category: 'Dicas & Tutoriais',
+      content: '',
+    },
+  });
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -34,6 +54,40 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
+
+  const createPostMutation = useMutation({
+    mutationFn: async (formData) => {
+      return await createRecord('posts', {
+        authorId: currentUser.id,
+        moderationStatus: 'approved',
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        ...(image ? { image, imageName } : {}),
+        category: formData.category,
+        likesCount: 0,
+        isLiked: false,
+        commentsCount: 0,
+        timeAgo: 'Agora mesmo',
+        createdAt: new Date().toISOString(),
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      setMessage('Publicação compartilhada com carinho no feed! 🧶✨');
+      setTimeout(() => {
+        if (onPostCreated) onPostCreated();
+        reset();
+        setImage('');
+        setImageName('');
+        setMessage('');
+        setError('');
+        onClose();
+      }, 700);
+    },
+    onError: () => {
+      setError('Não foi possível salvar a publicação. Verifique se o JSON Server está rodando.');
+    },
+  });
 
   if (!isOpen) return null;
 
@@ -83,42 +137,13 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
     reader.readAsDataURL(blob);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = (data) => {
     if (currentRole === 'guest' || !currentUser?.id) {
       setError('Você precisa estar conectada para criar uma publicação.');
       return;
     }
-
-    try {
-      await createRecord('posts', {
-        authorId: currentUser.id,
-        moderationStatus: 'pending',
-        title: title.trim(),
-        content: content.trim(),
-        ...(image ? { image, imageName } : {}),
-        category,
-        likesCount: 0,
-        isLiked: false,
-        commentsCount: 0,
-        timeAgo: 'Agora mesmo',
-        createdAt: new Date().toISOString(),
-      });
-      await queryClient.invalidateQueries({ queryKey: ['posts'] });
-      setMessage('Publicação enviada para análise antes de aparecer no feed.');
-      setTimeout(() => {
-        if (onPostCreated) onPostCreated();
-        setTitle('');
-        setContent('');
-        setImage('');
-        setImageName('');
-        setMessage('');
-        setError('');
-        onClose();
-      }, 700);
-    } catch (err) {
-      setError('Não foi possível salvar a publicação. Verifique se o JSON Server está rodando.');
-    }
+    setError('');
+    createPostMutation.mutate(data);
   };
 
   return (
@@ -162,18 +187,17 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <Input
               label="Título da Publicação"
               placeholder="Ex: Dúvida sobre quantidade de pontos para manta"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
+              error={errors.title?.message}
+              {...register('title')}
             />
 
             <div>
@@ -181,9 +205,8 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                 Categoria do Conteúdo
               </label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
                 className="w-full bg-white border border-[#E8CCD4] rounded-2xl px-3.5 py-2.5 text-xs text-[#251D20] font-semibold outline-none focus:border-[#B94F70] focus:ring-2 focus:ring-[#B94F70]/20 transition-all"
+                {...register('category')}
               >
                 <option value="Dicas & Tutoriais">Dicas & Tutoriais</option>
                 <option value="Vestuário">Vestuário</option>
@@ -192,6 +215,9 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                 <option value="Acessórios">Acessórios</option>
                 <option value="Comunidade">Comunidade & Dúvidas</option>
               </select>
+              {errors.category && (
+                <span className="text-xs text-red-500">{errors.category.message}</span>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -220,11 +246,12 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
               <textarea
                 rows={5}
                 placeholder="Escreva sua dúvida, receita ou dica para a comunidade..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
                 className="w-full bg-white border border-[#E8CCD4] rounded-2xl p-3.5 text-xs text-[#251D20] placeholder:text-[#715B62]/60 outline-none focus:border-[#B94F70] focus:ring-2 focus:ring-[#B94F70]/20 transition-all leading-relaxed"
-                required
+                {...register('content')}
               />
+              {errors.content && (
+                <span className="text-xs text-red-500">{errors.content.message}</span>
+              )}
             </div>
 
             <div className="pt-2">
@@ -233,10 +260,11 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                 variant="primary"
                 fullWidth
                 size="lg"
+                disabled={createPostMutation.isPending}
                 className="rounded-2xl font-black bg-[#B94F70] hover:bg-[#963B58] text-white shadow-md"
               >
                 <MessageSquare size={16} />
-                <span>Publicar no Feed</span>
+                <span>{createPostMutation.isPending ? 'Publicando...' : 'Publicar no Feed'}</span>
               </Button>
             </div>
           </form>

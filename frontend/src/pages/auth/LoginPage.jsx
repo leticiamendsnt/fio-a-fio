@@ -1,41 +1,72 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import { useQueryClient } from '@tanstack/react-query';
 import { getUsers } from '../../services/api';
+
+const loginSchema = z.object({
+  email: z.string().min(1, 'O e-mail é obrigatório.').email('Formato de e-mail inválido.'),
+  password: z.string().min(1, 'A senha é obrigatória.'),
+});
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { selectUser } = useRole();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setMessage('Login realizado com carinho! Bem-vinda de volta 🧶');
-    return getUsers().then(users => {
-      const user = users.find(item => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password);
-      if (user?.isSuspended) throw new Error('Esta conta estÃ¡ suspensa. Entre em contato com a equipe Fio a Fio.');
-      if (!user) throw new Error('E-mail ou senha inválidos.');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password }) => {
+      const users = await getUsers();
+      const user = users.find(
+        (item) => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password
+      );
+      if (!user) {
+        throw new Error('E-mail ou senha inválidos.');
+      }
+      if (user.isSuspended) {
+        throw new Error('Esta conta está suspensa. Entre em contato com a equipe Fio a Fio.');
+      }
+      return { user, users };
+    },
+    onSuccess: ({ user, users }) => {
       queryClient.setQueryData(['users'], users);
       selectUser(user);
-      setMessage('Login realizado com sucesso! Bem-vinda de volta.');
+      setError('');
+      setMessage('Login realizado com carinho! Bem-vinda de volta 🧶');
       setTimeout(() => navigate('/feed'), 600);
-    }).catch(loginError => {
+    },
+    onError: (loginError) => {
+      setMessage('');
       setError(loginError.message || 'Não foi possível acessar as contas.');
-    });
-    setTimeout(() => {
-      navigate('/feed');
-    }, 600);
+    },
+  });
+
+  const onSubmit = (data) => {
+    setError('');
+    setMessage('');
+    loginMutation.mutate(data);
   };
 
   return (
@@ -57,17 +88,20 @@ export const LoginPage = () => {
               {message}
             </div>
           )}
-          {error && <div role="alert" className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">{error}</div>}
+          {error && (
+            <div role="alert" className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">
+              {error}
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <Input
               label="E-mail"
               type="email"
               icon={Mail}
               placeholder="seuemail@exemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              error={errors.email?.message}
+              {...register('email')}
             />
 
             <Input
@@ -75,14 +109,20 @@ export const LoginPage = () => {
               type="password"
               icon={Lock}
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              error={errors.password?.message}
+              {...register('password')}
             />
 
-            <Button type="submit" variant="primary" fullWidth size="lg" className="bg-[#B94F70] text-white">
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              size="lg"
+              disabled={loginMutation.isPending}
+              className="bg-[#B94F70] text-white"
+            >
               <LogIn size={18} />
-              Entrar
+              {loginMutation.isPending ? 'Verificando...' : 'Entrar'}
             </Button>
           </form>
 

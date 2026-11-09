@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getVideoLessons } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createRecord } from '../../services/api';
 import { useRole } from '../../context/RoleContext';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
@@ -18,13 +18,24 @@ export const PaymentPage = () => {
   const { data: lessons = [] } = useApiData('videoLessons', getVideoLessons);
   const lesson = lessons.find((v) => v.id === id) || lessons[0];
   const [paymentMethod, setPaymentMethod] = useState('pix');
-  const [isProcessing, setIsProcessing] = useState(false);
+
+  const purchaseMutation = useMutation({
+    mutationFn: async (purchaseData) => {
+      return await createRecord('purchases', purchaseData);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      setTimeout(() => {
+        navigate(`/confirmacao-compra/${lesson.id}`);
+      }, 1000);
+    },
+  });
+
   if (!lesson) return <p role="status">Carregando aula…</p>;
 
-  const handlePay = async (e) => {
+  const handlePay = (e) => {
     e.preventDefault();
-    setIsProcessing(true);
-    await createRecord('purchases', {
+    purchaseMutation.mutate({
       userId: currentUser.id,
       lessonId: lesson.id,
       lessonProgressPercent: 0,
@@ -33,10 +44,6 @@ export const PaymentPage = () => {
       amount: lesson.price,
       paymentMethod: paymentMethod === 'pix' ? 'PIX' : 'Cartão de Crédito',
     });
-    await queryClient.invalidateQueries({ queryKey: ['purchases'] });
-    setTimeout(() => {
-      navigate(`/confirmacao-compra/${lesson.id}`);
-    }, 1200);
   };
 
   return (

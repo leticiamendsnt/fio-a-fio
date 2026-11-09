@@ -12,10 +12,10 @@ export const StudentLibraryPage = () => {
   const { currentUser } = useRole();
   const { data: purchases = [] } = useApiData('purchases', getPurchases);
 
-  // Filter purchases for the active logged-in user
+  // Filter purchases for the active logged-in user (excluding cancelled)
   const userPurchases = currentUser?.id
-    ? purchases.filter((item) => item.userId === currentUser.id)
-    : purchases;
+    ? purchases.filter((item) => item.userId === currentUser.id && item.status !== 'Cancelado')
+    : purchases.filter((item) => item.status !== 'Cancelado');
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">

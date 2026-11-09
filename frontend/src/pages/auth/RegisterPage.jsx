@@ -1,40 +1,58 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import { useQueryClient } from '@tanstack/react-query';
 import { createRecord, getUsers } from '../../services/api';
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
+  username: z
+    .string()
+    .min(3, 'O nome de usuário deve ter pelo menos 3 caracteres.')
+    .regex(/^[a-zA-Z0-9_.-]+$/, 'Apenas letras, números, traço, ponto e underline.'),
+  email: z.string().min(1, 'O e-mail é obrigatório.').email('Formato de e-mail inválido.'),
+  password: z.string().min(4, 'A senha deve ter pelo menos 4 caracteres.'),
+  isCreator: z.boolean().default(false),
+});
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { selectUser } = useRole();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    password: '',
-    isCreator: false
-  });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setError('');
-    try {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      username: '',
+      email: '',
+      password: '',
+      isCreator: false,
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async (formData) => {
       const users = await getUsers();
       const username = formData.username.trim().replace(/^@/, '');
-      if (users.some(user => user.email.toLowerCase() === formData.email.trim().toLowerCase())) {
+      if (users.some((user) => user.email.toLowerCase() === formData.email.trim().toLowerCase())) {
         throw new Error('Este e-mail já está cadastrado.');
       }
-      if (users.some(user => user.username.toLowerCase() === username.toLowerCase())) {
+      if (users.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
         throw new Error('Este nome de usuário já está em uso.');
       }
       const createdUser = await createRecord('users', {
@@ -45,15 +63,24 @@ export const RegisterPage = () => {
         role: formData.isCreator ? 'creator' : 'user',
         joinedDate: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date()),
       });
+      return { createdUser, users };
+    },
+    onSuccess: ({ createdUser, users }) => {
       queryClient.setQueryData(['users'], [...users, createdUser]);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       selectUser(createdUser);
       setMessage('Conta criada com carinho! Redirecionando...');
       setTimeout(() => navigate('/feed'), 800);
-    } catch (createError) {
+    },
+    onError: (createError) => {
       setError(createError.message || 'Não foi possível criar a conta. Verifique se o JSON Server está ativo.');
-    } finally {
-      setIsSaving(false);
-    }
+    },
+  });
+
+  const onSubmit = (data) => {
+    setError('');
+    setMessage('');
+    registerMutation.mutate(data);
   };
 
   return (
@@ -75,25 +102,27 @@ export const RegisterPage = () => {
               {message}
             </div>
           )}
-          {error && <div role="alert" className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">{error}</div>}
+          {error && (
+            <div role="alert" className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">
+              {error}
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <Input
               label="Nome Completo"
               icon={User}
               placeholder="Maria das Dores"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
+              error={errors.name?.message}
+              {...register('name')}
             />
 
             <Input
               label="Nome de Usuário (@username)"
               icon={User}
               placeholder="mariacroche"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
+              error={errors.username?.message}
+              {...register('username')}
             />
 
             <Input
@@ -101,9 +130,8 @@ export const RegisterPage = () => {
               type="email"
               icon={Mail}
               placeholder="seuemail@exemplo.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
+              error={errors.email?.message}
+              {...register('email')}
             />
 
             <Input
@@ -111,26 +139,31 @@ export const RegisterPage = () => {
               type="password"
               icon={Lock}
               placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
+              error={errors.password?.message}
+              {...register('password')}
             />
 
             <label className="flex items-center gap-2.5 p-3.5 bg-[#F6DDE5]/70 rounded-2xl border border-[#E8CCD4] cursor-pointer hover:bg-[#F6DDE5] transition-all">
               <input
                 type="checkbox"
-                checked={formData.isCreator}
-                onChange={(e) => setFormData({ ...formData, isCreator: e.target.checked })}
                 className="w-4 h-4 text-[#B94F70] rounded-md focus:ring-[#B94F70] accent-[#B94F70]"
+                {...register('isCreator')}
               />
               <span className="text-xs font-bold text-[#251D20]">
                 Desejo também vender minhas vídeo-aulas (Perfil de Criador)
               </span>
             </label>
 
-            <Button type="submit" variant="primary" fullWidth size="lg" disabled={isSaving} className="bg-[#B94F70] text-white">
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              size="lg"
+              disabled={registerMutation.isPending}
+              className="bg-[#B94F70] text-white"
+            >
               <UserPlus size={18} />
-              {isSaving ? 'Criando conta...' : 'Concluir Cadastro'}
+              {registerMutation.isPending ? 'Criando conta...' : 'Concluir Cadastro'}
             </Button>
           </form>
 

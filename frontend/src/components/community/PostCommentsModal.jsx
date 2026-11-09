@@ -4,7 +4,7 @@ import { X, Send, Heart, MessageCircle } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useRole } from '../../context/RoleContext';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createRecord, updateRecord } from '../../services/api';
 
 export const PostCommentsModal = ({ isOpen, onClose, post, onCommentAdded }) => {
@@ -41,42 +41,58 @@ export const PostCommentsModal = ({ isOpen, onClose, post, onCommentAdded }) => 
     };
   }, [isOpen, onClose]);
 
+  const addCommentMutation = useMutation({
+    mutationFn: async (text) => {
+      return await createRecord('comments', {
+        postId: post.id,
+        authorId: currentUser.id,
+        timeAgo: 'Agora mesmo',
+        text,
+      });
+    },
+    onSuccess: (savedComment) => {
+      const newCommentObj = {
+        id: savedComment.id,
+        author: {
+          name: currentUser?.name || 'Você',
+          avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        },
+        text: savedComment.text,
+        timeAgo: 'Agora mesmo'
+      };
+      const updatedComments = [...comments, newCommentObj];
+      setComments(updatedComments);
+      setNewCommentText('');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      if (onCommentAdded) {
+        onCommentAdded(post.id, updatedComments);
+      }
+    },
+  });
+
+  const likeCommentPostMutation = useMutation({
+    mutationFn: async ({ nextIsLiked, nextLikesCount }) => {
+      return await updateRecord('posts', post.id, { isLiked: nextIsLiked, likesCount: nextLikesCount });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+  });
+
   if (!isOpen || !post) return null;
 
-  const handleAddComment = async (e) => {
+  const handleAddComment = (e) => {
     e.preventDefault();
     if (!newCommentText.trim()) return;
-
-    const savedComment = await createRecord('comments', {
-      postId: post.id,
-      authorId: currentUser.id,
-      timeAgo: 'Agora mesmo',
-      text: newCommentText.trim(),
-    });
-    const newCommentObj = {
-      id: savedComment.id,
-      author: {
-        name: currentUser?.name || 'Você',
-        avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-      },
-      text: newCommentText.trim(),
-      timeAgo: 'Agora mesmo'
-    };
-
-    const updatedComments = [...comments, newCommentObj];
-    setComments(updatedComments);
-    setNewCommentText('');
-    await queryClient.invalidateQueries({ queryKey: ['posts'] });
-
-    if (onCommentAdded) {
-      onCommentAdded(post.id, updatedComments);
-    }
+    addCommentMutation.mutate(newCommentText.trim());
   };
 
-  const toggleLike = async () => {
-    await updateRecord('posts', post.id, { isLiked: !isLiked, likesCount: likesCount + (isLiked ? -1 : 1) });
-    setIsLiked(!isLiked);
-    setLikesCount(prev => (isLiked ? prev - 1 : prev + 1));
+  const toggleLike = () => {
+    const nextIsLiked = !isLiked;
+    const nextLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
+    setIsLiked(nextIsLiked);
+    setLikesCount(nextLikesCount);
+    likeCommentPostMutation.mutate({ nextIsLiked, nextLikesCount });
   };
 
   return createPortal((

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { getVideoLessons } from '../../services/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteRecord, getVideoLessons } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { useRole } from '../../context/RoleContext';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
@@ -11,7 +12,27 @@ import { PlusCircle, Edit, Trash2, Eye, Sparkles, Video } from 'lucide-react';
 
 export const ManageVideosPage = () => {
   const { currentUser } = useRole();
+  const queryClient = useQueryClient();
   const { data: lessons = [] } = useApiData('videoLessons', getVideoLessons);
+
+  const deleteLessonMutation = useMutation({
+    mutationFn: async (id) => {
+      return await deleteRecord('videoLessons', id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videoLessons'] });
+    },
+    onError: () => {
+      alert('Não foi possível excluir a vídeo-aula. Verifique o servidor local.');
+    },
+  });
+
+  const handleDelete = (lesson) => {
+    if (!window.confirm(`Tem certeza que deseja excluir a vídeo-aula "${lesson.title}"? Ela será removida do catálogo.`)) {
+      return;
+    }
+    deleteLessonMutation.mutate(lesson.id);
+  };
 
   // Filter lessons created by this specific creator
   const myLessons = currentUser?.id
@@ -86,7 +107,13 @@ export const ManageVideosPage = () => {
                         <span>Editar</span>
                       </Button>
                     </Link>
-                    <Button variant="danger" size="sm" onClick={() => alert(`Simulação: Aula "${lesson.title}" excluída.`)}>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      disabled={deleteLessonMutation.isPending}
+                      onClick={() => handleDelete(lesson)}
+                      title="Excluir aula"
+                    >
                       <Trash2 size={14} />
                     </Button>
                   </div>

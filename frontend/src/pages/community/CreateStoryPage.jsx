@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRole } from '../../context/RoleContext';
 import { createRecord } from '../../services/api';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
@@ -15,10 +15,32 @@ export const CreateStoryPage = () => {
   const [caption, setCaption] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const createStoryMutation = useMutation({
+    mutationFn: async (storyData) => {
+      return await createRecord('stories', storyData);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['stories'] });
+      setMessage('Story publicado com sucesso! (Visível por 24 horas)');
+      setTimeout(() => {
+        navigate('/feed');
+      }, 800);
+    },
+    onError: () => {
+      setError('Não foi possível publicar o story.');
+    },
+  });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    await createRecord('stories', {
+    if (!currentUser?.id) {
+      setError('Você precisa estar conectada para criar um story.');
+      return;
+    }
+    setError('');
+    createStoryMutation.mutate({
       authorId: currentUser.id,
       mediaUrl,
       caption,
@@ -26,11 +48,6 @@ export const CreateStoryPage = () => {
       hasStory: true,
       hasUnseen: true,
     });
-    await queryClient.invalidateQueries({ queryKey: ['stories'] });
-    setMessage('Story publicado com sucesso! (Visível por 24 horas)');
-    setTimeout(() => {
-      navigate('/feed');
-    }, 800);
   };
 
   return (
@@ -53,6 +70,11 @@ export const CreateStoryPage = () => {
           {message && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl text-center">
               {message}
+            </div>
+          )}
+          {error && (
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
+              {error}
             </div>
           )}
 
@@ -78,8 +100,14 @@ export const CreateStoryPage = () => {
               />
             </div>
 
-            <Button type="submit" variant="primary" fullWidth size="lg">
-              Publicar Story
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              size="lg"
+              disabled={createStoryMutation.isPending}
+            >
+              {createStoryMutation.isPending ? 'Publicando...' : 'Publicar Story'}
             </Button>
           </form>
         </CardBody>

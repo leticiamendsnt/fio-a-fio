@@ -33,7 +33,13 @@ export const RoleProvider = ({ children }) => {
   };
 
   const selectUser = (user) => {
-    if (!user) return;
+    if (!user) {
+      setCurrentUserId(null);
+      setCurrentRole('guest');
+      localStorage.removeItem('fioafio_userId');
+      localStorage.setItem('fioafio_role', 'guest');
+      return;
+    }
     setCurrentUserId(user.id);
     setCurrentRole(user.role);
     localStorage.setItem('fioafio_userId', user.id);
