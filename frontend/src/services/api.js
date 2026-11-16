@@ -1,8 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const request = async (path, options) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('fioafio_token') : null;
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('fioafio_userId') : null;
+  const authHeaders = {};
+  if (token) authHeaders['Authorization'] = `Bearer ${token}`;
+  if (userId) authHeaders['x-user-id'] = userId;
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders, ...options?.headers },
     ...options,
   });
 

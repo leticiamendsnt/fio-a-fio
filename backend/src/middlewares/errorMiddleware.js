@@ -8,6 +8,17 @@ export const notFoundHandler = (req, res, next) => {
 export const errorHandler = (err, req, res, next) => {
   console.error('[Error Middleware]:', err);
 
+  // Erro de validação Zod
+  if (err.name === 'ZodError' || err.errors && Array.isArray(err.errors) && err.issues) {
+    return res.status(400).json({
+      error: 'Erro de validação',
+      details: (err.errors || err.issues || []).map((e) => ({
+        field: e.path ? e.path.join('.') : undefined,
+        message: e.message
+      }))
+    });
+  }
+
   // Erro de validação Mongoose
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map((val) => val.message);

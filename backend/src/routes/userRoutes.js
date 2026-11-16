@@ -1,15 +1,17 @@
 import { Router } from 'express';
 import { getUsers, getUserById, createUser, updateUser, deleteUser, toggleFollow } from '../controllers/userController.js';
-import { optionalAuth } from '../middlewares/authMiddleware.js';
+import { requireAuth, requireRole, optionalAuth } from '../middlewares/authMiddleware.js';
+import { validate } from '../middlewares/validate.js';
+import { createUserSchema, updateUserSchema } from '../schemas/userSchema.js';
 
 const router = Router();
 
 router.get('/', getUsers);
 router.get('/:id', getUserById);
-router.post('/', createUser);
-router.patch('/:id', updateUser);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
-router.post('/:id/follow', optionalAuth, toggleFollow);
+router.post('/', validate(createUserSchema), createUser);
+router.patch('/:id', validate(updateUserSchema), updateUser);
+router.put('/:id', validate(updateUserSchema), updateUser);
+router.delete('/:id', requireAuth, requireRole('admin', 'user', 'creator'), deleteUser);
+router.post('/:id/follow', requireAuth, requireRole('user', 'creator', 'admin'), toggleFollow);
 
 export default router;
