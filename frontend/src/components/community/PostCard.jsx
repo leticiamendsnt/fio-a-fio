@@ -7,7 +7,7 @@ import { Heart, MessageCircle, Share2, Edit3, Trash2 } from 'lucide-react';
 import { PostCommentsModal } from './PostCommentsModal';
 import { EditPostModal } from './EditPostModal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateRecord, deleteRecord } from '../../services/api';
+import { updateRecord, deleteRecord, likePost } from '../../services/api';
 import { useRole } from '../../context/RoleContext';
 
 export const PostCard = ({ post }) => {
@@ -23,11 +23,20 @@ export const PostCard = ({ post }) => {
   const canManage = isAuthor || currentRole === 'admin';
 
   const likeMutation = useMutation({
-    mutationFn: async ({ nextIsLiked, nextLikesCount }) => {
-      return await updateRecord('posts', post.id, { isLiked: nextIsLiked, likesCount: nextLikesCount });
+    mutationFn: async () => {
+      return await likePost(post.id, currentUser?.id);
     },
-    onSuccess: () => {
+    onSuccess: (updatedPost) => {
+      if (updatedPost && typeof updatedPost.likesCount === 'number') {
+        setLikesCount(updatedPost.likesCount);
+        setIsLiked(Boolean(updatedPost.isLiked));
+      }
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: () => {
+      // Reverte estado otimista em caso de erro
+      setIsLiked((prev) => !prev);
+      setLikesCount((prev) => (isLiked ? prev + 1 : Math.max(0, prev - 1)));
     },
   });
 
@@ -44,11 +53,12 @@ export const PostCard = ({ post }) => {
   });
 
   const toggleLike = () => {
+    // Atualização otimista imediata na interface
     const nextIsLiked = !isLiked;
-    const nextLikesCount = likesCount + (isLiked ? -1 : 1);
+    const nextLikesCount = nextIsLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
     setIsLiked(nextIsLiked);
     setLikesCount(nextLikesCount);
-    likeMutation.mutate({ nextIsLiked, nextLikesCount });
+    likeMutation.mutate();
   };
 
   const handleDelete = () => {

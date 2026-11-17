@@ -25,6 +25,28 @@ export const createRecord = (resource, data) => request(`/${resource}`, { method
 export const updateRecord = (resource, id, data) => request(`/${resource}/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteRecord = (resource, id) => request(`/${resource}/${id}`, { method: 'DELETE' });
 
+export const likePost = async (postId, userId) => {
+  try {
+    return await request(`/posts/${postId}/like`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  } catch (err) {
+    // Fallback gracioso para compatibilidade com JSON Server caso não seja o backend Express
+    return await request(`/posts/${postId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isLiked: true }),
+    });
+  }
+};
+
+export const toggleFollowUser = async (targetUserId, currentUserId) => {
+  return await request(`/users/${targetUserId}/follow`, {
+    method: 'POST',
+    body: JSON.stringify({ currentUserId }),
+  });
+};
+
 export const getUsers = () => get('users');
 export const getPosts = async ({ includeRemoved = false } = {}) => {
   const [posts, comments, users] = await Promise.all([get('posts'), get('comments'), getUsers()]);

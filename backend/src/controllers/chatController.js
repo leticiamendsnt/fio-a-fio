@@ -1,6 +1,7 @@
 import { Conversation } from '../models/Conversation.js';
 import { Message } from '../models/Message.js';
 import { findByIdOrCustomId, updateByIdOrCustomId, generateId } from '../utils/helpers.js';
+import { broadcastWebSocketMessage } from '../services/websocketService.js';
 
 export const getConversations = async (req, res, next) => {
   try {
@@ -58,6 +59,9 @@ export const createMessage = async (req, res, next) => {
     }
     const message = new Message(data);
     await message.save();
+
+    // Notifica clientes WebSocket em tempo real
+    broadcastWebSocketMessage(message.toJSON());
 
     // Atualiza updatedAt e lastMessage na conversa
     if (data.conversationId) {

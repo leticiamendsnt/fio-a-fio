@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useRole } from '../../context/RoleContext';
-import { useChat } from '../../context/ApiChatContext';
-import { getUsers } from '../../services/api';
-import { useApiData } from '../../hooks/useApiData';
-import { Avatar } from '../../components/ui/Avatar';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useRole } from "../../context/RoleContext";
+import { useChat } from "../../context/ApiChatContext";
+import { getUsers } from "../../services/api";
+import { useApiData } from "../../hooks/useApiData";
+import { Avatar } from "../../components/ui/Avatar";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
 import {
   MessageCircle,
   Send,
@@ -15,8 +15,8 @@ import {
   ArrowLeft,
   CheckCheck,
   Check,
-  Plus
-} from 'lucide-react';
+  Plus,
+} from "lucide-react";
 
 export const ChatPage = () => {
   const { currentUser } = useRole();
@@ -28,20 +28,21 @@ export const ChatPage = () => {
     activeConversation,
     sendMessage,
     markAsRead,
-    getOrCreateConversationWithUser
+    getOrCreateConversationWithUser,
+    isWsConnected,
   } = useChat();
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { data: users = [] } = useApiData('users', getUsers);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [inputText, setInputText] = useState('');
+  const { data: users = [] } = useApiData("users", getUsers);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef(null);
 
   // Disable body scroll when ChatPage is active to prevent outer page scrollbar
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = originalOverflow;
     };
@@ -50,13 +51,15 @@ export const ChatPage = () => {
   // Check query param (e.g., /chat?userId=usr-2 or /chat?user=mariabordadeira)
   useEffect(() => {
     if (!conversationsLoaded) return;
-    const targetUserId = searchParams.get('userId') || searchParams.get('user');
+    const targetUserId = searchParams.get("userId") || searchParams.get("user");
     if (targetUserId) {
       const foundUser = users.find(
-        u => u.id === targetUserId || u.username === targetUserId
+        (u) => u.id === targetUserId || u.username === targetUserId,
       );
       if (foundUser) {
-        getOrCreateConversationWithUser(currentUser.id, foundUser).then(setActiveConversationId);
+        getOrCreateConversationWithUser(currentUser.id, foundUser).then(
+          setActiveConversationId,
+        );
       }
     } else if (!activeConversationId && conversations.length > 0) {
       setActiveConversationId(conversations[0].id);
@@ -72,39 +75,75 @@ export const ChatPage = () => {
 
   // Auto scroll to bottom of messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeConversation?.messages]);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputText.trim() || !activeConversationId) return;
     sendMessage(activeConversationId, inputText, currentUser.id);
-    setInputText('');
+    setInputText("");
   };
 
-  // Helper to find other participant in conversation
+  // Helper seguro para identificar o outro participante na conversa
   const getOtherParticipant = (conv) => {
-    return conv.participants.find(p => p.id !== currentUser.id && p.username !== currentUser.username) || conv.participants[0];
+    if (
+      !conv ||
+      !Array.isArray(conv.participants) ||
+      conv.participants.length === 0
+    ) {
+      return {
+        id: "usr-fallback",
+        name: "Usuária Fio a Fio",
+        username: "crocheteira",
+        avatar:
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        role: "user",
+      };
+    }
+    const other = conv.participants.find(
+      (p) =>
+        p && p.id !== currentUser?.id && p.username !== currentUser?.username,
+    );
+    return (
+      other ||
+      conv.participants[0] || {
+        id: "usr-fallback",
+        name: "Usuária Fio a Fio",
+        username: "crocheteira",
+        avatar:
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        role: "user",
+      }
+    );
   };
 
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = conversations.filter((conv) => {
     const other = getOtherParticipant(conv);
-    return (
-      other.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      other.username.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const search = searchTerm.trim().toLowerCase();
+    if (!search) return true;
+    const nameMatch = other?.name
+      ? other.name.toLowerCase().includes(search)
+      : false;
+    const usernameMatch = other?.username
+      ? other.username.toLowerCase().includes(search)
+      : false;
+    return nameMatch || usernameMatch;
   });
 
-  const activeOtherUser = activeConversation ? getOtherParticipant(activeConversation) : null;
+  const activeOtherUser = activeConversation
+    ? getOtherParticipant(activeConversation)
+    : null;
 
   return (
     <div className="fixed inset-x-0 top-14 sm:top-16 bottom-16 sm:bottom-20 z-30 flex items-center justify-center p-3 sm:p-6 bg-[#F8E9ED]">
       <Card className="w-full max-w-5xl h-full min-h-0 flex overflow-hidden border border-[#E8CCD4] shadow-2xl rounded-2xl sm:rounded-3xl bg-white">
-        
         {/* Left Column: Conversations List with Internal Scrollbar */}
-        <div className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-[#E8CCD4] bg-[#F6DDE5]/40 shrink-0 ${
-          activeConversationId ? 'hidden md:flex' : 'flex'
-        }`}>
+        <div
+          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-[#E8CCD4] bg-[#F6DDE5]/40 shrink-0 ${
+            activeConversationId ? "hidden md:flex" : "flex"
+          }`}
+        >
           {/* List Header */}
           <div className="p-4 border-b border-[#E8CCD4] bg-white/95 backdrop-blur-md shrink-0">
             <div className="flex items-center justify-between mb-3">
@@ -112,13 +151,18 @@ export const ChatPage = () => {
                 <div className="w-8 h-8 rounded-xl bg-[#F6DDE5] text-[#B94F70] flex items-center justify-center font-bold">
                   💬
                 </div>
-                <h1 className="font-extrabold text-lg text-[#251D20]">Mensagens</h1>
+                <h1 className="font-extrabold text-lg text-[#251D20]">
+                  Mensagens
+                </h1>
               </div>
             </div>
 
             {/* Search Box */}
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B94F70]" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B94F70]"
+              />
               <input
                 type="text"
                 placeholder="Buscar conversa..."
@@ -134,7 +178,9 @@ export const ChatPage = () => {
             {filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-[#715B62] space-y-2">
                 <MessageCircle size={32} className="mx-auto text-[#D98CA1]" />
-                <p className="text-xs font-semibold">Nenhuma conversa encontrada</p>
+                <p className="text-xs font-semibold">
+                  Nenhuma conversa encontrada
+                </p>
               </div>
             ) : (
               filteredConversations.map((conv) => {
@@ -148,32 +194,46 @@ export const ChatPage = () => {
                     onClick={() => setActiveConversationId(conv.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 text-left ${
                       isSelected
-                        ? 'bg-[#B94F70] text-white shadow-md shadow-[#B94F70]/20 scale-[1.01]'
-                        : 'hover:bg-[#F6DDE5] bg-white/60 text-[#251D20]'
+                        ? "bg-[#B94F70] text-white shadow-md shadow-[#B94F70]/20 scale-[1.01]"
+                        : "hover:bg-[#F6DDE5] bg-white/60 text-[#251D20]"
                     }`}
                   >
                     <div className="relative shrink-0">
-                      <Avatar src={other.avatar} alt={other.name} size="md" />
+                      <Avatar
+                        src={other?.avatar}
+                        alt={other?.name || "Usuária"}
+                        size="md"
+                      />
                       <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className={`text-xs font-extrabold truncate ${isSelected ? 'text-white' : 'text-[#251D20]'}`}>
-                          {other.name}
+                        <span
+                          className={`text-xs font-extrabold truncate ${isSelected ? "text-white" : "text-[#251D20]"}`}
+                        >
+                          {other?.name || "Usuária"}
                         </span>
                         {conv.lastMessage && (
-                          <span className={`text-[10px] font-medium ${isSelected ? 'text-[#F6DDE5]' : 'text-[#715B62]'}`}>
+                          <span
+                            className={`text-[10px] font-medium ${isSelected ? "text-[#F6DDE5]" : "text-[#715B62]"}`}
+                          >
                             {conv.lastMessage.timestamp}
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between mt-0.5">
-                        <p className={`text-[11px] truncate ${
-                          isSelected ? 'text-[#F6DDE5] font-medium' : unread ? 'font-bold text-[#251D20]' : 'text-[#715B62]'
-                        }`}>
-                          {conv.lastMessage?.text || 'Sem mensagens'}
+                        <p
+                          className={`text-[11px] truncate ${
+                            isSelected
+                              ? "text-[#F6DDE5] font-medium"
+                              : unread
+                                ? "font-bold text-[#251D20]"
+                                : "text-[#715B62]"
+                          }`}
+                        >
+                          {conv.lastMessage?.text || "Sem mensagens"}
                         </p>
                         {unread && !isSelected && (
                           <span className="ml-1.5 shrink-0 bg-[#B94F70] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
@@ -190,9 +250,11 @@ export const ChatPage = () => {
         </div>
 
         {/* Right Column: Chat Thread */}
-        <div className={`flex-1 flex flex-col bg-[#F8E9ED]/30 ${
-          !activeConversationId ? 'hidden md:flex' : 'flex'
-        }`}>
+        <div
+          className={`flex-1 flex flex-col bg-[#F8E9ED]/30 ${
+            !activeConversationId ? "hidden md:flex" : "flex"
+          }`}
+        >
           {activeConversation && activeOtherUser ? (
             <>
               {/* Thread Header */}
@@ -206,25 +268,49 @@ export const ChatPage = () => {
                     <ArrowLeft size={18} />
                   </button>
 
-                  <Avatar src={activeOtherUser.avatar} alt={activeOtherUser.name} size="md" />
+                  <Avatar
+                    src={activeOtherUser?.avatar}
+                    alt={activeOtherUser?.name || "Conversa"}
+                    size="md"
+                  />
 
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <h2 className="font-extrabold text-sm text-[#251D20]">{activeOtherUser.name}</h2>
-                      {activeOtherUser.role === 'creator' && (
+                      <h2 className="font-extrabold text-sm text-[#251D20]">
+                        {activeOtherUser?.name || "Conversa"}
+                      </h2>
+                      {activeOtherUser?.role === "creator" && (
                         <span className="bg-[#F6DDE5] text-[#B94F70] text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-[#D98CA1]/50">
                           Professora 🧶
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-[#715B62]">@{activeOtherUser.username} • On-line</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[11px] text-[#715B62]">
+                        @{activeOtherUser?.username || "crocheteira"} • On-line
+                      </p>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
+                          isWsConnected
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${isWsConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"}`}
+                        />
+                        {isWsConnected ? "WebSocket Ativo" : "Sincronizado"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate(`/perfil?user=${activeOtherUser.username}`)}
+                  onClick={() =>
+                    navigate(`/perfil?user=${activeOtherUser?.username || ""}`)
+                  }
                   className="rounded-full text-xs font-bold border-[#E8CCD4] text-[#251D20] hover:bg-[#F6DDE5] hover:text-[#B94F70]"
                 >
                   <User size={14} />
@@ -246,15 +332,15 @@ export const ChatPage = () => {
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%] ${
-                        isMe ? 'ml-auto' : 'mr-auto'
+                      className={`flex flex-col ${isMe ? "items-end" : "items-start"} max-w-[85%] sm:max-w-[70%] ${
+                        isMe ? "ml-auto" : "mr-auto"
                       }`}
                     >
                       <div
                         className={`p-3.5 px-4 text-xs sm:text-sm leading-relaxed shadow-xs ${
                           isMe
-                            ? 'bg-[#B94F70] text-white rounded-2xl rounded-br-xs font-medium shadow-sm'
-                            : 'bg-white text-[#251D20] border border-[#E8CCD4] rounded-2xl rounded-bl-xs font-normal'
+                            ? "bg-[#B94F70] text-white rounded-2xl rounded-br-xs font-medium shadow-sm"
+                            : "bg-white text-[#251D20] border border-[#E8CCD4] rounded-2xl rounded-bl-xs font-normal"
                         }`}
                       >
                         {msg.text}
@@ -262,7 +348,9 @@ export const ChatPage = () => {
 
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-[#715B62] px-1">
                         <span>{msg.timestamp}</span>
-                        {isMe && <CheckCheck size={12} className="text-[#B94F70]" />}
+                        {isMe && (
+                          <CheckCheck size={12} className="text-[#B94F70]" />
+                        )}
                       </div>
                     </div>
                   );
@@ -271,7 +359,10 @@ export const ChatPage = () => {
               </div>
 
               {/* Input Form */}
-              <form onSubmit={handleSend} className="p-3 sm:p-4 bg-white border-t border-[#E8CCD4] flex items-center gap-2 shrink-0">
+              <form
+                onSubmit={handleSend}
+                className="p-3 sm:p-4 bg-white border-t border-[#E8CCD4] flex items-center gap-2 shrink-0"
+              >
                 <input
                   type="text"
                   placeholder="Escreva sua mensagem com carinho..."
@@ -295,15 +386,17 @@ export const ChatPage = () => {
                 💬
               </div>
               <div className="max-w-xs space-y-1">
-                <h3 className="font-extrabold text-base text-[#251D20]">Suas Conversas no Fio a Fio</h3>
+                <h3 className="font-extrabold text-base text-[#251D20]">
+                  Suas Conversas no Fio a Fio
+                </h3>
                 <p className="text-xs text-[#715B62]">
-                  Selecione uma pessoa ao lado para conversar sobre receitas, fios e tirar dúvidas.
+                  Selecione uma pessoa ao lado para conversar sobre receitas,
+                  fios e tirar dúvidas.
                 </p>
               </div>
             </div>
           )}
         </div>
-
       </Card>
     </div>
   );

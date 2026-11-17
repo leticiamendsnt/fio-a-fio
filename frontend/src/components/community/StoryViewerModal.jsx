@@ -12,6 +12,14 @@ export const StoryViewerModal = ({ story: initialStory, onClose }) => {
     return idx >= 0 ? idx : 0;
   });
 
+  // Sincroniza índice quando a lista de stories carrega ou o story inicial muda
+  useEffect(() => {
+    if (initialStory && storiesList.length > 0) {
+      const idx = storiesList.findIndex(s => s.id === initialStory.id);
+      if (idx >= 0) setCurrentIndex(idx);
+    }
+  }, [initialStory?.id, storiesList.length]);
+
   const currentStory = storiesList[currentIndex] || initialStory || storiesList[0];
 
   const [progress, setProgress] = useState(0);
@@ -206,6 +214,30 @@ export const StoryViewerModal = ({ story: initialStory, onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Miniaturas de carrossel para navegação rápida entre stories */}
+      {storiesList.length > 1 && (
+        <div className="absolute bottom-3 left-4 right-4 z-40 flex items-center justify-center gap-2.5 overflow-x-auto py-2 no-scrollbar">
+          {storiesList.map((st, idx) => (
+            <button
+              key={st.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentIndex(idx);
+              }}
+              className={`p-0.5 rounded-full transition-all duration-200 cursor-pointer ${
+                idx === currentIndex
+                  ? 'ring-3 ring-[#B94F70] scale-110 shadow-lg bg-white'
+                  : 'opacity-60 hover:opacity-100 hover:scale-105'
+              }`}
+              title={`Story de ${st.authorName}`}
+              aria-label={`Ver story ${idx + 1} de ${st.authorName}`}
+            >
+              <Avatar src={st.avatar} alt={st.authorName} size="xs" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

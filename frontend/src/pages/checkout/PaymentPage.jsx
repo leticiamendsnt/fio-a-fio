@@ -18,6 +18,7 @@ export const PaymentPage = () => {
   const { data: lessons = [] } = useApiData('videoLessons', getVideoLessons);
   const lesson = lessons.find((v) => v.id === id) || lessons[0];
   const [paymentMethod, setPaymentMethod] = useState('pix');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const purchaseMutation = useMutation({
     mutationFn: async (purchaseData) => {
@@ -29,7 +30,12 @@ export const PaymentPage = () => {
         navigate(`/confirmacao-compra/${lesson.id}`);
       }, 1000);
     },
+    onError: (err) => {
+      setErrorMessage(err.message || 'Não foi possível concluir a compra. Tente novamente.');
+    },
   });
+
+  const isProcessing = purchaseMutation.isPending;
 
   if (!lesson) return <p role="status">Carregando aula…</p>;
 
@@ -60,6 +66,12 @@ export const PaymentPage = () => {
         </CardHeader>
 
         <CardBody className="space-y-6">
+          {errorMessage && (
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-center">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="flex justify-between items-center p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-xs font-semibold text-zinc-700">
             <span>Total da compra:</span>
             <span className="text-base font-extrabold text-rose-600">

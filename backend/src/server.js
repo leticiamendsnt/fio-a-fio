@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
+import { setupWebSocketServer } from './services/websocketService.js';
 
 const startServer = async () => {
   // Inicializa conexão com o MongoDB
@@ -12,10 +13,14 @@ const startServer = async () => {
     console.log(`\n🧵 ===============================================`);
     console.log(`🧶 Fio a Fio Backend API iniciado com sucesso!`);
     console.log(`🚀 Servidor rodando em: http://localhost:${env.PORT}`);
+    console.log(`💬 WebSocket ativo em: ws://localhost:${env.PORT}/ws`);
     console.log(`📦 Banco de dados: MongoDB (${env.MONGODB_URI})`);
     console.log(`🌐 Ambiente: ${env.NODE_ENV}`);
     console.log(`🧵 ===============================================\n`);
   });
+
+  // Inicializa o servidor WebSocket de mensagens em tempo real
+  setupWebSocketServer(server);
 
   const gracefulShutdown = () => {
     console.log('\n[Servidor] Encerrando graciosamente...');
