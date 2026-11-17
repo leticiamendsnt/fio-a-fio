@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alocação individual semanal — Fio a Fio</title>
+<style>
+  :root { --bg:#fff; --text:#202124; --muted:#626870; --line:#d9dde3; --grid:#edf0f4;
+          --psw:#c2416f; --psw-soft:#fdf0f5; --gpti:#3d3d45; --gpti-soft:#f1f1f3; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { padding:22px; min-width:1960px; }
+  h1 { margin:0; font-size:22px; font-weight:600; }
+  h2 { margin:22px 0 8px; font-size:17px; font-weight:600; }
+  p { margin:4px 0 14px; color:var(--muted); }
+  .summary { display:flex; gap:20px; margin-top:8px; color:var(--muted); font-size:12px; }
+  .team { display:grid; grid-template-columns:170px repeat(12, 143px) 90px; border:1px solid var(--line); width:max-content; }
+  .header, .person, .cell, .total { border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .header { min-height:48px; padding:8px 5px; text-align:center; font-size:11px; font-weight:600; }
+  .header small { display:block; margin-top:3px; color:var(--muted); font-weight:400; }
+  .person { padding:12px; font-size:13px; font-weight:600; display:flex; flex-direction:column; justify-content:center; }
+  .person small { color:var(--muted); font-weight:400; margin-top:3px; }
+  .cell { min-height:150px; padding:6px 6px 16px; position:relative; background:#fff; }
+  .cell.psw { background:var(--psw-soft); }
+  .cell.gpti { background:var(--gpti-soft); }
+  .cell.empty { background:#fafafa; color:var(--muted); text-align:center; padding-top:50px; }
+  .item { border-left:3px solid var(--psw); padding-left:5px; margin-bottom:6px; }
+  .gpti .item { border-left-color:var(--gpti); }
+  .item strong { display:block; font-size:10px; letter-spacing:.02em; }
+  .item span { display:block; font-size:10px; }
+  .item em { display:block; font-size:10px; color:var(--muted); font-style:normal; }
+  .load { position:absolute; left:6px; right:6px; bottom:6px; height:5px; background:var(--grid); }
+  .load > i { display:block; height:100%; background:var(--psw); }
+  .gpti .load > i { background:var(--gpti); }
+  .total { display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; font-weight:600; }
+  .total small { color:var(--muted); font-weight:400; }
+  .legend { margin-top:10px; color:var(--muted); font-size:11px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Alocação individual semanal — Fio a Fio</h1>
+  <p>Cada bloco é uma atribuição controlável: um aluno, uma tarefa, uma semana e um esforço planejado.</p>
+  <div class="summary">
+    <span>PSW: 4,5 h/aluno/semana · 54 h/aluno</span>
+    <span>GPTI: 4 h/aluno/semana nas S4–S12 · 36 h/aluno</span>
+    <span>Capacidade nominal: 5 h/aluno/semana</span>
+  </div>
+  <h2>PSW — produto e desenvolvimento</h2>
+  <section id="psw"></section>
+  <h2>GPTI — gestão</h2>
+  <section id="gpti"></section>
+  <div class="legend">Os IDs D01–D18 e G01–G12 ligam cada atribuição à rede de dependências e à estimativa de custos do Plano de Projeto. A barra no rodapé de cada célula mostra a carga em relação a 5 h.</div>
+</main>
+<script>
+(() => {
+  const weeks = [
+    ["S1","03/08","04/08"],["S2","10/08","18/08"],["S3","17/08","25/08"],["S4","24/08","01/09"],
+    ["S5","31/08","08/09"],["S6","14/09","15/09"],["S7","21/09","22/09"],["S8","05/10","06/10"],
+    ["S9","26/10","13/10"],["S10","09/11","27/10"],["S11","16/11","03/11"],["S12","30/11","10/11"]
+  ];
+  const t = (id, name, hours) => ({id, name, hours});
+  const psw = [
+    {name:"Letícia", role:"Publicações", weeks:[
+      [t("D01","Feed e interações",4.5)],
+      [t("D02","Telas de feed e perfil",4.5)],
+      [t("D03","Publicação, comentário e curtida",4.5)],
+      [t("D04","Validações de publicação",4.5)],
+      [t("D05","Base React",2), t("D06","Cadastro de publicações",2.5)],
+      [t("D06","Cadastro React de publicações",4.5)],
+      [t("D06","Curtida e comentário",3), t("D09","Catálogo e busca",1.5)],
+      [t("D09","Avaliação",2), t("D10","Teste de publicações",2.5)],
+      [t("D11","Express e MongoDB",2), t("D12","API de publicações",2.5)],
+      [t("D13","API de catálogo",2), t("D14","Perfil de usuária",1.5), t("D15","Simulador de pagamento",1)],
+      [t("D16","Consulta de vendas",2.5), t("D17","Busca",1), t("D14","Controle de acesso",0.5), t("D15","Simulador",0.5)],
+      [t("D17","Busca",1), t("D18","Testes de publicações e API",3.5)]
+    ]},
+    {name:"Maria Clara", role:"Vídeo-aulas", weeks:[
+      [t("D01","Vídeo-aula e fluxo de compra",4.5)],
+      [t("D02","Telas de aulas, detalhe e checkout",4.5)],
+      [t("D03","Vídeo-aula, compra e pagamento",4.5)],
+      [t("D04","Preço, compra única e divisão",4.5)],
+      [t("D05","Base React",2), t("D07","Cadastro de vídeo-aulas",2.5)],
+      [t("D07","Cadastro React de vídeo-aulas",4.5)],
+      [t("D07","Retirada do catálogo",3), t("D09","Detalhe e compra",1.5)],
+      [t("D09","Pagamento e vendas",2), t("D10","Teste da compra",2.5)],
+      [t("D11","Express e MongoDB",2), t("D12","API de vídeo-aulas",2.5)],
+      [t("D13","API de compra",2), t("D14","Perfil de criadora",1.5), t("D15","Simulador de pagamento",1)],
+      [t("D16","Aprovação e divisão",2.5), t("D17","Avaliação",1), t("D14","Controle de acesso",0.5), t("D15","Simulador",0.5)],
+      [t("D17","Avaliação",1), t("D18","Testes da compra e da divisão",3.5)]
+    ]},
+    {name:"Kauã", role:"Materiais", weeks:[
+      [t("D01","Materiais, perfis e atores",4.5)],
+      [t("D02","Telas de biblioteca e estante",4.5)],
+      [t("D03","Material, usuária e login",4.5)],
+      [t("D04","Validações de material e avaliação",4.5)],
+      [t("D05","Base React",2), t("D08","Cadastro de materiais",2.5)],
+      [t("D08","Cadastro React de materiais",4.5)],
+      [t("D08","Filtro por tipo",3), t("D09","Estante",1.5)],
+      [t("D09","Estante",2), t("D10","Teste de materiais e demonstração",2.5)],
+      [t("D11","Express e MongoDB",2), t("D12","API de materiais",2.5)],
+      [t("D13","API da estante",2), t("D14","Login simulado",1.5), t("D15","Simulador de pagamento",1)],
+      [t("D16","Liberação",2.5), t("D17","Média",1), t("D14","Controle de acesso",0.5), t("D15","Simulador",0.5)],
+      [t("D17","Média",1), t("D18","Integração e demonstração",3.5)]
+    ]}
+  ];
+  const g = (a,b,c) => [null,null,null].concat([a,b,c][0]);
+  const gpti = [
+    {name:"Matheus", role:"Gerente do projeto", weeks:[null,null,null,
+      [t("G01","Business Case",4)],[t("G04","EAP e dicionário",4)],[t("G06","Lista de atividades e rede",4)],
+      [t("G07","Custos e linha de base",4)],[t("G08","Revisão do caso e do plano",4)],[t("G09","Medição de escopo",4)],
+      [t("G10","Custo realizado",4)],[t("G11","Stakeholders",4)],[t("G12","Aceite e encerramento",4)]]},
+    {name:"Gabriel", role:"Escopo e riscos", weeks:[null,null,null,
+      [t("G02","Termo de Abertura",4)],[t("G04","Declaração do escopo e aceite",4)],[t("G06","Estimativas e caminho crítico",4)],
+      [t("G07","Riscos e contingência",4)],[t("G08","Revisão do termo e do dicionário",4)],[t("G09","Cronograma e variações",4)],
+      [t("G10","Recursos e reservas",4)],[t("G11","Riscos e respostas",4)],[t("G12","Desempenho final e lições",4)]]},
+    {name:"Guilherme", role:"Comunicação e aceite", weeks:[null,null,null,
+      [t("G03","Stakeholders, governança e riscos",4)],[t("G05","Requisitos e responsabilidades",4)],[t("G06","Capacidade e nivelamento",4)],
+      [t("G07","Engajamento e comunicações",4)],[t("G08","Consistência e entrega da AV1",4)],[t("G09","Status Report 1",4)],
+      [t("G10","Status Report 2",4)],[t("G11","Status Report 3",4)],[t("G12","Consolidação e arquivo",4)]]}
+  ];
+  const fmt = h => String(h).replace(".", ",") + " h";
+  const render = (rootId, team, cls) => {
+    const root = document.getElementById(rootId);
+    const grid = document.createElement("div"); grid.className = "team";
+    const add = (c, html) => { const d = document.createElement("div"); d.className = c; d.innerHTML = html; grid.appendChild(d); return d; };
+    add("header", "Aluno");
+    weeks.forEach(([w,gd,pd]) => add("header", `${w}<small>${cls === "psw" ? pd : gd}</small>`));
+    add("header", "Total");
+    team.forEach(p => {
+      add("person", `${p.name}<small>${p.role}</small>`);
+      let sum = 0;
+      p.weeks.forEach(items => {
+        if (!items) { add("cell empty", "Conceitos<br>0 h de projeto"); return; }
+        const h = items.reduce((a,i) => a + i.hours, 0); sum += h;
+        add(`cell ${cls}`, items.map(i => `<div class="item"><strong>${i.id} · ${fmt(i.hours)}</strong><span>${i.name}</span></div>`).join("") +
+          `<div class="load"><i style="width:${Math.min(100, h/5*100)}%"></i></div>`);
+      });
+      add("total", `${fmt(sum)}<small>planejado</small>`);
+    });
+    root.appendChild(grid);
+  };
+  render("psw", psw, "psw");
+  render("gpti", gpti, "gpti");
+})();
+</script>
+</body>
+</html>

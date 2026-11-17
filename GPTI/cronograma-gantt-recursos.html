@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cronograma do projeto — Fio a Fio</title>
+</head>
+<body>
+<div id="gantt-app">
+  <header>
+    <div>
+      <h1>Cronograma do projeto — Fio a Fio</h1>
+      <p>12 semanas · rede de dependências e esforço por atividade</p>
+    </div>
+    <div class="legend" aria-label="Legenda">
+      <span><i class="swatch psw"></i>PSW</span>
+      <span><i class="swatch gpti"></i>GPTI</span>
+      <span><i class="critical-line"></i>Caminho crítico</span>
+      <span><i class="arrow-line"></i>Dependência</span>
+    </div>
+  </header>
+  <div class="note">Semana letiva, não semana de calendário. A aula de 28/09 e 29/09 não conta. Em cada coluna, a primeira data é a de GPTI e a segunda é a de PSW. Passe o mouse sobre uma atividade para destacar suas dependências.</div>
+  <div class="chart-wrap">
+    <svg id="gantt-chart" role="img" aria-label="Gráfico de Gantt com atividades PSW e GPTI, esforço e dependências"></svg>
+  </div>
+</div>
+
+<style>
+  body { margin: 0; background: #fff; }
+  #gantt-app {
+    --bg: #ffffff; --text: #202124; --muted: #5f6368; --line: #d9dde3; --grid: #eceff3;
+    --psw: #c2416f; --psw-soft: #fbe3ec; --gpti: #3d3d45; --gpti-soft: #e9e9ec; --critical: #e0a100;
+    color: var(--text); background: var(--bg);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 20px;
+  }
+  #gantt-app header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 8px; }
+  #gantt-app h1 { font-size: 22px; font-weight: 600; margin: 0; }
+  #gantt-app p, #gantt-app .note { color: var(--muted); margin: 3px 0 0; }
+  #gantt-app .note { font-size: 12px; margin-bottom: 14px; }
+  #gantt-app .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); }
+  #gantt-app .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  #gantt-app .swatch { width: 16px; height: 9px; border-radius: 2px; display: inline-block; }
+  #gantt-app .swatch.psw { background: var(--psw); }
+  #gantt-app .swatch.gpti { background: var(--gpti); }
+  #gantt-app .critical-line { width: 16px; border-top: 3px solid var(--critical); }
+  #gantt-app .arrow-line { width: 18px; border-top: 1px solid var(--muted); position: relative; }
+  #gantt-app .arrow-line::after { content: ""; position: absolute; right: -1px; top: -4px; border: 3px solid transparent; border-left-color: var(--muted); }
+  #gantt-app .chart-wrap { overflow-x: auto; border: 1px solid var(--line); }
+  #gantt-app svg { display: block; min-width: 1480px; background: var(--bg); }
+  #gantt-app .week-label { font-size: 12px; font-weight: 600; fill: var(--text); text-anchor: middle; }
+  #gantt-app .date-label { font-size: 10px; fill: var(--muted); text-anchor: middle; }
+  #gantt-app .column-title { font-size: 11px; font-weight: 600; fill: var(--muted); text-transform: uppercase; }
+  #gantt-app .task-label { font-size: 11px; fill: var(--text); }
+  #gantt-app .resource-label { font-size: 11px; fill: var(--text); }
+  #gantt-app .bar-label { font-size: 10px; font-weight: 600; fill: #fff; text-anchor: middle; pointer-events: none; }
+  #gantt-app .grid-line, #gantt-app .row-line { stroke: var(--grid); stroke-width: 1; }
+  #gantt-app .section-bg.psw { fill: var(--psw-soft); opacity: .32; }
+  #gantt-app .section-bg.gpti { fill: var(--gpti-soft); opacity: .4; }
+  #gantt-app .bar.psw { fill: var(--psw); }
+  #gantt-app .bar.gpti { fill: var(--gpti); }
+  #gantt-app .bar.critical { stroke: var(--critical); stroke-width: 3; }
+  #gantt-app .dependency { fill: none; stroke: #657080; stroke-width: 1.15; opacity: .38; marker-end: url(#arrow); }
+  #gantt-app .task-group.dimmed { opacity: .18; }
+  #gantt-app .task-group.focused .bar { stroke-width: 4; }
+  #gantt-app .dependency.dimmed { opacity: .05; }
+  #gantt-app .dependency.focused { opacity: .95; stroke-width: 2; }
+</style>
+
+<script>
+(() => {
+  const weeks = [
+    ["S1", "03/08", "04/08"], ["S2", "10/08", "18/08"], ["S3", "17/08", "25/08"], ["S4", "24/08", "01/09"],
+    ["S5", "31/08", "08/09"], ["S6", "14/09", "15/09"], ["S7", "21/09", "22/09"], ["S8", "05/10", "06/10"],
+    ["S9", "26/10", "13/10"], ["S10", "09/11", "27/10"], ["S11", "16/11", "03/11"], ["S12", "30/11", "10/11"]
+  ];
+
+  const tasks = [
+    {id:"D01", name:"Escopo e critérios", team:"psw", start:1, end:1, hours:13.5, critical:true, deps:[]},
+    {id:"D02", name:"Protótipos HTML/CSS", team:"psw", start:2, end:2, hours:13.5, critical:true, deps:[["D01","FS"]]},
+    {id:"D03", name:"Modelo, contratos e mocks", team:"psw", start:3, end:3, hours:13.5, critical:true, deps:[["D02","FS"]]},
+    {id:"D04", name:"Regras e validações JS", team:"psw", start:4, end:4, hours:13.5, critical:true, deps:[["D03","FS"]]},
+    {id:"D05", name:"Base React", team:"psw", start:5, end:5, hours:6, critical:true, deps:[["D04","FS"]]},
+    {id:"D06", name:"Frontend — publicações", team:"psw", start:5, end:7, hours:10, critical:true, deps:[["D05","SS"]]},
+    {id:"D07", name:"Frontend — vídeo-aulas", team:"psw", start:5, end:7, hours:10, critical:true, deps:[["D05","SS"]]},
+    {id:"D08", name:"Frontend — materiais", team:"psw", start:5, end:7, hours:10, critical:true, deps:[["D05","SS"]]},
+    {id:"D09", name:"Catálogo, compra, estante e vendas", team:"psw", start:7, end:8, hours:10.5, critical:true, deps:[["D05","FS"],["D07","SS"]]},
+    {id:"D10", name:"Testes e demonstração M1", team:"psw", start:8, end:8, hours:7.5, critical:true, deps:[["D06","FS"],["D07","FS"],["D08","FS"],["D09","SS"]]},
+    {id:"D11", name:"Express, MongoDB e persistência", team:"psw", start:9, end:9, hours:6, critical:true, deps:[["D10","FS"]]},
+    {id:"D12", name:"APIs dos três cadastros", team:"psw", start:9, end:9, hours:7.5, deps:[["D11","SS"]]},
+    {id:"D13", name:"API de catálogo, compra e estante", team:"psw", start:10, end:10, hours:6, critical:true, deps:[["D09","FS"],["D11","FS"]]},
+    {id:"D14", name:"Perfis e login simulado", team:"psw", start:10, end:11, hours:6, deps:[["D11","FS"]]},
+    {id:"D15", name:"Simulador de pagamento", team:"psw", start:10, end:11, hours:4.5, deps:[["D03","FS"],["D11","FS"]]},
+    {id:"D16", name:"Aprovação, liberação e divisão", team:"psw", start:11, end:11, hours:7.5, critical:true, deps:[["D12","FS"],["D13","FS"],["D15","SS"]]},
+    {id:"D17", name:"Avaliação, média e busca", team:"psw", start:11, end:12, hours:6, deps:[["D13","FS"]]},
+    {id:"D18", name:"Integração, testes e documentação", team:"psw", start:12, end:12, hours:10.5, critical:true, deps:[["D12","FS"],["D14","FS"],["D15","FS"],["D16","FS"],["D17","SS"]]},
+
+    {id:"G01", name:"Business Case", team:"gpti", start:4, end:4, hours:4, deps:[]},
+    {id:"G02", name:"Termo de Abertura", team:"gpti", start:4, end:4, hours:4, deps:[["G01","SS"]]},
+    {id:"G03", name:"Stakeholders, governança e riscos", team:"gpti", start:4, end:4, hours:4, deps:[["G02","SS"]]},
+    {id:"G04", name:"Escopo, EAP e dicionário", team:"gpti", start:5, end:5, hours:8, critical:true, deps:[["G02","FS"]]},
+    {id:"G05", name:"Requisitos e responsabilidades", team:"gpti", start:5, end:5, hours:4, deps:[["G03","FS"],["G04","SS"]]},
+    {id:"G06", name:"Cronograma e recursos", team:"gpti", start:6, end:6, hours:12, critical:true, deps:[["G04","FS"]]},
+    {id:"G07", name:"Custos, riscos e engajamento", team:"gpti", start:7, end:7, hours:12, critical:true, deps:[["G05","FS"],["G06","FS"]]},
+    {id:"G08", name:"Consolidação da AV1", team:"gpti", start:8, end:8, hours:12, critical:true, deps:[["G07","FS"]]},
+    {id:"G09", name:"Status 1 — escopo e tempo", team:"gpti", start:9, end:9, hours:12, deps:[["G08","FS"],["D10","FS"]]},
+    {id:"G10", name:"Status 2 — custos e recursos", team:"gpti", start:10, end:10, hours:12, deps:[["G09","FS"]]},
+    {id:"G11", name:"Status 3 — stakeholders e riscos", team:"gpti", start:11, end:11, hours:12, deps:[["G10","FS"]]},
+    {id:"G12", name:"Encerramento e lições aprendidas", team:"gpti", start:12, end:12, hours:12, critical:true, deps:[["G11","FS"],["D18","SS"]]}
+  ];
+
+  const svg = document.getElementById("gantt-chart");
+  const NS = "http://www.w3.org/2000/svg";
+  const labelW = 290, weekW = 82, resourceW = 110, headerH = 78, rowH = 29;
+  const gridX = labelW, gridW = weekW * weeks.length, resourceX = gridX + gridW + 14;
+  const width = resourceX + resourceW, height = headerH + tasks.length * rowH + 18;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+
+  const el = (name, attrs = {}, text = "") => {
+    const node = document.createElementNS(NS, name);
+    Object.entries(attrs).forEach(([k,v]) => node.setAttribute(k, v));
+    if (text) node.textContent = text;
+    return node;
+  };
+  const fmt = h => String(h).replace(".", ",") + " h";
+
+  const defs = el("defs");
+  const marker = el("marker", {id:"arrow", markerWidth:"7", markerHeight:"7", refX:"6", refY:"3.5", orient:"auto"});
+  marker.appendChild(el("path", {d:"M0,0 L7,3.5 L0,7 Z", fill:"#657080"}));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  svg.appendChild(el("text", {x:12, y:24, class:"column-title"}, "ATIVIDADE"));
+  svg.appendChild(el("text", {x:resourceX, y:24, class:"column-title"}, "ESFORÇO"));
+
+  weeks.forEach(([week, gpti, psw], i) => {
+    const x = gridX + i * weekW;
+    svg.appendChild(el("line", {x1:x, y1:0, x2:x, y2:height, class:"grid-line"}));
+    svg.appendChild(el("text", {x:x + weekW/2, y:18, class:"week-label"}, week));
+    svg.appendChild(el("text", {x:x + weekW/2, y:34, class:"date-label"}, gpti));
+    svg.appendChild(el("text", {x:x + weekW/2, y:48, class:"date-label"}, psw));
+  });
+  svg.appendChild(el("line", {x1:gridX + gridW, y1:0, x2:gridX + gridW, y2:height, class:"grid-line"}));
+
+  const firstGpti = tasks.findIndex(t => t.team === "gpti");
+  svg.appendChild(el("rect", {x:0, y:headerH, width, height:firstGpti*rowH, class:"section-bg psw"}));
+  svg.appendChild(el("rect", {x:0, y:headerH+firstGpti*rowH, width, height:(tasks.length-firstGpti)*rowH, class:"section-bg gpti"}));
+
+  const positions = {};
+  tasks.forEach((task, i) => {
+    const y = headerH + i * rowH;
+    const startX = gridX + (task.start - 1) * weekW + 5;
+    const endX = gridX + task.end * weekW - 5;
+    positions[task.id] = {startX, endX, y:y + rowH/2};
+    svg.appendChild(el("line", {x1:0, y1:y, x2:width, y2:y, class:"row-line"}));
+  });
+
+  const dependencies = [];
+  tasks.forEach(task => task.deps.forEach(([source,type], index) => {
+    const a = positions[source], b = positions[task.id];
+    if (!a || !b) return;
+    let d;
+    if (type === "SS") {
+      const x = Math.min(a.startX, b.startX) - 7 - index*3;
+      d = `M ${a.startX} ${a.y} H ${x} V ${b.y} H ${b.startX}`;
+    } else {
+      const x1 = a.endX, x2 = b.startX;
+      const bend = x2 > x1 ? x1 + Math.max(8, (x2-x1)/2) : Math.max(x1,x2)+12+index*4;
+      d = `M ${x1} ${a.y} H ${bend} V ${b.y} H ${x2}`;
+    }
+    const path = el("path", {d, class:"dependency", "data-from":source, "data-to":task.id});
+    dependencies.push(path);
+    svg.appendChild(path);
+  }));
+
+  const groups = new Map();
+  tasks.forEach((task, i) => {
+    const y = headerH + i * rowH;
+    const {startX, endX} = positions[task.id];
+    const group = el("g", {class:"task-group", "data-id":task.id, tabindex:"0"});
+    group.appendChild(el("text", {x:12, y:y+19, class:"task-label"}, `${task.id}  ${task.name}`));
+    group.appendChild(el("rect", {x:startX, y:y+5, width:endX-startX, height:19, rx:3, class:`bar ${task.team}${task.critical ? " critical" : ""}`}));
+    group.appendChild(el("text", {x:(startX+endX)/2, y:y+18.5, class:"bar-label"}, task.id));
+    group.appendChild(el("text", {x:resourceX, y:y+19, class:"resource-label"}, fmt(task.hours)));
+    groups.set(task.id, group);
+    svg.appendChild(group);
+  });
+
+  const clearFocus = () => {
+    groups.forEach(g => g.classList.remove("dimmed","focused"));
+    dependencies.forEach(p => p.classList.remove("dimmed","focused"));
+  };
+  const focus = id => {
+    const related = new Set([id]);
+    dependencies.forEach(p => {
+      const from = p.dataset.from, to = p.dataset.to;
+      if (from === id || to === id) { related.add(from); related.add(to); }
+    });
+    groups.forEach((g,gid) => g.classList.toggle("dimmed", !related.has(gid)));
+    groups.forEach((g,gid) => g.classList.toggle("focused", gid === id));
+    dependencies.forEach(p => {
+      const hit = p.dataset.from === id || p.dataset.to === id;
+      p.classList.toggle("focused", hit);
+      p.classList.toggle("dimmed", !hit);
+    });
+  };
+  groups.forEach((group,id) => {
+    group.addEventListener("mouseenter", () => focus(id));
+    group.addEventListener("focus", () => focus(id));
+    group.addEventListener("mouseleave", clearFocus);
+    group.addEventListener("blur", clearFocus);
+  });
+})();
+</script>
+</body>
+</html>
