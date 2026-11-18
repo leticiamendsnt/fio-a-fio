@@ -13,6 +13,7 @@ import { Sale } from '../models/Sale.js';
 import { Conversation } from '../models/Conversation.js';
 import { Message } from '../models/Message.js';
 import { AdminDashboard } from '../models/AdminDashboard.js';
+import { README_MOCK_USERS } from './mockUsers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,11 +50,21 @@ const seedDatabase = async () => {
       AdminDashboard.deleteMany({}),
     ]);
 
-    console.log('[Seed] Inserindo dados de db.json...');
+    console.log('[Seed] Inserindo dados...');
 
-    if (db.users?.length) {
-      await User.insertMany(db.users);
-      console.log(`[Seed] ✓ ${db.users.length} usuários inseridos.`);
+    // Mescla usuários do db.json com os usuários mockados do README.md
+    const usersList = db.users || [];
+    const userEmails = new Set(usersList.map(u => u.email?.toLowerCase()));
+    const finalUsers = [...usersList];
+    for (const mockUser of README_MOCK_USERS) {
+      if (!userEmails.has(mockUser.email.toLowerCase())) {
+        finalUsers.push(mockUser);
+      }
+    }
+
+    if (finalUsers.length) {
+      await User.insertMany(finalUsers);
+      console.log(`[Seed] ✓ ${finalUsers.length} usuários inseridos no MongoDB (incluindo mockados do README.md).`);
     }
 
     if (db.posts?.length) {
