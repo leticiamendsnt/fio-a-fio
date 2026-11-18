@@ -3,15 +3,16 @@ import { z } from 'zod';
 export const createConversationSchema = z.object({
   id: z.string().optional(),
   participantIds: z.array(z.string()).min(1, 'A conversa deve conter pelo menos 1 participante.'),
-  lastMessage: z.string().optional(),
+  lastMessage: z.union([z.string(), z.record(z.any())]).optional(),
   lastMessageTime: z.string().optional(),
   unreadCount: z.number().optional()
 });
 
 export const updateConversationSchema = z.object({
-  lastMessage: z.string().optional(),
+  lastMessage: z.union([z.string(), z.record(z.any())]).optional(),
   lastMessageTime: z.string().optional(),
-  unreadCount: z.number().optional()
+  unreadCount: z.number().optional(),
+  participantIds: z.array(z.string()).optional()
 });
 
 export const createMessageSchema = z.object({

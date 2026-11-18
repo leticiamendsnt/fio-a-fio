@@ -2,37 +2,39 @@
 
 Fio a Fio é uma aplicação acadêmica que reúne uma comunidade de pessoas interessadas em crochê. O sistema combina recursos sociais — publicações, comentários, stories, perfis e conversas — com materiais de aprendizagem e videoaulas de criadores. Também inclui áreas de estudante, criador e administração.
 
-O projeto é composto por uma interface React responsiva e uma API local de demonstração baseada em JSON Server. Os dados usados pela aplicação ficam em `backend/db.json`. A solução é destinada a estudo e demonstração: autenticação, pagamentos e regras de negócio não têm segurança de produção.
+O projeto é composto por uma interface React moderna e responsiva e uma API modular robusta em Node.js e Express, com validação de esquemas via Zod, persistência em MongoDB (via Mongoose) e comunicação em tempo real via WebSockets para o chat.
 
 ## Estrutura do projeto
 
 ```text
 .
 ├── backend/
-│   ├── db.json                 # banco JSON local usado pela API
-│   ├── package.json            # inicialização do JSON Server
-│   └── README.md               # notas sobre a API de demonstração
+│   ├── src/                    # controladores, modelos, rotas, schemas Zod e serviços
+│   ├── test/                   # testes automatizados de validação e rotas
+│   ├── .env.example            # exemplo de variáveis de ambiente
+│   ├── package.json            # scripts e dependências do backend
+│   └── README.md               # documentação e endpoints do backend
 ├── frontend/
 │   ├── index.html              # entrada da aplicação Vite
 │   ├── package.json            # scripts e dependências React/Vite
 │   └── src/
-│       ├── components/         # layout, navegação e componentes de interface
-│       ├── context/            # estado de perfil e conversas
-│       ├── hooks/              # hooks de acesso e estado de dados
-│       ├── mocks/              # dados de referência para as fixtures
+│       ├── components/         # layout, navegação, rotas protegidas e UI
+│       ├── context/            # autenticação, papéis (roles) e conversas via WebSocket
+│       ├── hooks/              # hooks de acesso e consumo de dados
 │       ├── pages/              # telas agrupadas por área funcional
 │       └── services/           # comunicação HTTP com a API
 ├── DocumentacaoFioAFio.md      # documentação de requisitos e análise
 └── README.md                   # instalação, operação e uso
 ```
 
-As páginas estão organizadas em `auth`, `community`, `learning`, `checkout`, `student`, `creator` e `admin`. A API expõe coleções como `users`, `posts`, `comments`, `stories`, `conversations`, `messages`, `materials`, `videoLessons`, `purchases`, `sales`, `salesSummary` e `adminDashboard`.
+As páginas estão organizadas em `auth`, `community`, `learning`, `checkout`, `student`, `creator` e `admin`. A API Express expõe endpoints para gerenciamento de usuários, publicações, comentários, stories, conversas em tempo real, videoaulas, compras, relatórios de vendas e painel de moderação administrativa.
 
 ## Requisitos
 
-- Node.js e npm instalados.
-- Um navegador atualizado.
-- Acesso local às portas `3001` (API) e `5173` (interface), ou portas alternativas se estiverem ocupadas.
+- **Node.js 18+** e npm instalados.
+- **Instância do MongoDB** (local na porta `27017` ou uma URI remota do MongoDB Atlas configurada no `.env` do backend).
+- Um navegador web atualizado.
+- Acesso local às portas `3001` (API/WebSocket) e `5173` (interface Vite).
 
 ## Instalação
 
@@ -69,7 +71,7 @@ O frontend usa `http://localhost:3001` como endereço padrão da API. Para alter
 VITE_API_URL=http://localhost:3001
 ```
 
-O JSON Server grava as alterações no arquivo `backend/db.json`; portanto, dados podem continuar alterados entre execuções. Antes de uma demonstração importante, faça uma cópia desse arquivo para preservar a fixture inicial. A API também pode ser consultada diretamente em endereços como `http://localhost:3001/users`, `/posts`, `/comments` e `/videoLessons`.
+A API Express expõe endpoints REST como `http://localhost:3001/users`, `/posts`, `/comments`, `/videoLessons` e `/adminDashboard`, além do WebSocket em `ws://localhost:3001/ws` para atualização de mensagens em tempo real. Os dados são persistidos no MongoDB e sincronizados com segurança.
 
 ### Compilar a interface
 

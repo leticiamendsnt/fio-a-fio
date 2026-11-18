@@ -1,29 +1,45 @@
-# API mock de desenvolvimento
+# Backend da API — Fio a Fio
 
-Esta pasta contém somente o JSON Server usado para servir dados de demonstração ao frontend. Não é um backend de produção e não implementa autenticação, pagamentos ou regras de negócio.
+Esta pasta contém o backend da aplicação Fio a Fio, construído em **Node.js**, **Express**, **MongoDB** (via Mongoose), **Zod** para validação de esquemas e **WebSockets** para troca de mensagens e chat em tempo real.
+
+## Requisitos
+
+- **Node.js 18+**
+- **MongoDB** em execução localmente em `mongodb://127.0.0.1:27017/fioafio` ou configurado via variável `MONGODB_URI` no arquivo `.env`.
+
+## Configuração
+
+Copie o arquivo de exemplo caso ainda não tenha o `.env`:
+
+```sh
+cp .env.example .env
+```
 
 ## Executar
 
-Na raiz do repositório:
+Na raiz do repositório ou dentro da pasta `backend`:
 
 ```sh
 npm run dev --prefix backend
+# ou dentro de backend:
+npm run dev
 ```
 
-O servidor fica em `http://localhost:3001`. Em outro terminal, inicie o frontend:
+O servidor HTTP iniciará em `http://localhost:3001` e o endpoint WebSocket em `ws://localhost:3001/ws`.
+
+## Testes
+
+Para rodar os testes de validação de schemas Zod e integração:
 
 ```sh
-npm run dev --prefix frontend
+npm test --prefix backend
 ```
 
-O frontend lê `VITE_API_URL` se estiver configurada; sem ela, usa `http://localhost:3001`.
+## Recursos e Endpoints Principais
 
-## Recursos
-
-`db.json` contém somente dados que já existiam nos mocks: `users`, `posts`, `comments`, `stories`, `conversations`, `messages`, `materials`, `videoLessons`, `purchases`, `sales`, `salesSummary` e `adminDashboard`.
-
-Posts, comentários, conversas, mensagens, stories, aulas e compras usam IDs de referência para reduzir dados duplicados. O serviço do frontend recompõe as estruturas aninhadas esperadas pelos componentes atuais.
-
-Rotas úteis para conferir a API: `/users`, `/posts`, `/posts/post-1`, `/comments`, `/messages`, `/videoLessons` e `/adminDashboard`. Os métodos de escrita alteram o arquivo local `db.json`; descarte ou restaure essas alterações quando quiser voltar à fixture inicial.
-
-Os arquivos em `frontend/src/mocks` são mantidos como fonte da fixture inicial e referência dos dados originais. As telas consomem os serviços HTTP, não importam esses mocks diretamente.
+A API Express disponibiliza:
+- Autenticação JWT: `/auth/login`, `/auth/register`, `/auth/me`
+- Comunidade: `/users`, `/posts`, `/comments`, `/stories`
+- Aprendizagem: `/videoLessons`, `/videoLessons/:id/reviews`, `/materials`
+- E-commerce e Gestão: `/purchases`, `/sales`, `/salesSummary`, `/adminDashboard`
+- Conversas em tempo real: `/conversations`, `/messages` e conexão WebSocket via `/ws`.

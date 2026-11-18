@@ -91,6 +91,11 @@ export const toggleFollow = async (req, res, next) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
+    if (!Array.isArray(currentUser.following)) currentUser.following = [];
+    if (!Array.isArray(currentUser.followers)) currentUser.followers = [];
+    if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
+    if (!Array.isArray(targetUser.following)) targetUser.following = [];
+
     const isFollowing = currentUser.following.includes(targetUser.id);
 
     if (isFollowing) {

@@ -13,6 +13,11 @@ export const createVideoLessonSchema = z.object({
   videoUrl: z.string().optional(),
   creatorId: z.string().optional(),
   creatorBio: z.string().optional(),
+  rating: z.coerce.number().optional(),
+  reviewsCount: z.coerce.number().optional(),
+  studentsCount: z.coerce.number().optional(),
+  requirements: z.array(z.string()).optional(),
+  whatYouWillLearn: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
   moderationStatus: z.enum(['active', 'approved', 'pending', 'removed']).optional(),
   moderatedAt: z.union([z.string(), z.date(), z.null()]).optional(),
@@ -45,6 +50,28 @@ export const updateVideoLessonSchema = z.object({
   description: z.string().min(5, 'A descrição deve ter pelo menos 5 caracteres.').trim().optional(),
   thumbnail: z.string().optional(),
   videoUrl: z.string().optional(),
+  rating: z.coerce.number().optional(),
+  reviewsCount: z.coerce.number().optional(),
+  studentsCount: z.coerce.number().optional(),
+  requirements: z.array(z.string()).optional(),
+  whatYouWillLearn: z.array(z.string()).optional(),
+  modules: z
+    .array(
+      z.object({
+        title: z.string(),
+        lessons: z
+          .array(
+            z.object({
+              id: z.string().optional(),
+              title: z.string(),
+              duration: z.string().optional(),
+              videoUrl: z.string().optional()
+            })
+          )
+          .optional()
+      })
+    )
+    .optional(),
   isActive: z.boolean().optional(),
   moderationStatus: z.enum(['active', 'approved', 'pending', 'removed']).optional(),
   moderatedAt: z.union([z.string(), z.date(), z.null()]).optional()

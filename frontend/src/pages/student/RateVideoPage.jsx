@@ -1,28 +1,63 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getVideoLessons } from '../../services/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getVideoLessons, createLessonReview } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
+import { useRole } from '../../context/RoleContext';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { StarRating } from '../../components/ui/StarRating';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, Star } from 'lucide-react';
+import { ArrowLeft, Star, CheckCircle2 } from 'lucide-react';
 
 export const RateVideoPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useRole();
   const { data: lessons = [] } = useApiData('videoLessons', getVideoLessons);
   const lesson = lessons.find((v) => v.id === id) || lessons[0];
+
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const reviewMutation = useMutation({
+    mutationFn: async (reviewPayload) => {
+      return await createLessonReview(lesson.id, reviewPayload);
+    },
+    onSuccess: (data) => {
+      // Invalida o cache para atualizar a nota média e o número de avaliações em todas as telas
+      queryClient.invalidateQueries({ queryKey: ['videoLessons'] });
+      queryClient.invalidateQueries({ queryKey: ['lessonReviews', lesson.id] });
+      setMessage(data?.message || 'Avaliação registrada no banco de dados com sucesso! Muito obrigado pelo seu feedback. 🧶✨');
+      setTimeout(() => {
+        navigate(`/videoaulas/${lesson.id}`);
+      }, 1200);
+    },
+    onError: (err) => {
+      setError(err.message || 'Não foi possível salvar sua avaliação. Tente novamente.');
+    }
+  });
+
   if (!lesson) return <p role="status">Carregando aula…</p>;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setMessage('Avaliação enviada com sucesso! Muito obrigado pelo seu feedback.');
-    setTimeout(() => {
-      navigate('/biblioteca');
-    }, 1000);
+    setError('');
+    setMessage('');
+    if (!comment.trim()) {
+      setError('Por favor, escreva um breve comentário sobre a aula.');
+      return;
+    }
+
+    reviewMutation.mutate({
+      rating,
+      comment: comment.trim(),
+      userId: currentUser?.id || 'usr-1',
+      userName: currentUser?.name || 'Aluna Fio a Fio',
+      userAvatar: currentUser?.avatar
+    });
   };
 
   return (
@@ -46,13 +81,20 @@ export const RateVideoPage = () => {
             <img src={lesson.thumbnail} alt={lesson.title} className="w-14 h-14 rounded-xl object-cover" />
             <div>
               <p className="font-bold text-xs text-zinc-900 line-clamp-1">{lesson.title}</p>
-              <p className="text-[11px] text-zinc-500">Professora: {lesson.creator.name}</p>
+              <p className="text-[11px] text-zinc-500">Professora: {lesson.creator?.name || 'Professora Fio a Fio'}</p>
             </div>
           </div>
 
           {message && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl text-center">
-              {message}
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl text-center flex items-center justify-center gap-1.5">
+              <CheckCircle2 size={16} className="text-emerald-600" />
+              <span>{message}</span>
+            </div>
+          )}
+
+          {error && (
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
+              {error}
             </div>
           )}
 
@@ -80,8 +122,14 @@ export const RateVideoPage = () => {
               />
             </div>
 
-            <Button type="submit" variant="primary" fullWidth size="lg">
-              Enviar Avaliação
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              size="lg"
+              disabled={reviewMutation.isPending}
+            >
+              {reviewMutation.isPending ? 'Gravando no banco...' : 'Enviar Avaliação'}
             </Button>
           </form>
         </CardBody>

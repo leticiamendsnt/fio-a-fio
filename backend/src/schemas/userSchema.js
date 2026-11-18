@@ -15,6 +15,7 @@ export const createUserSchema = z.object({
   avatar: z.string().optional(),
   bio: z.string().optional(),
   location: z.string().optional(),
+  status: z.string().optional(),
   isSuspended: z.boolean().optional(),
   suspendedAt: z.union([z.string(), z.date(), z.null()]).optional(),
   verifiedCreator: z.boolean().optional()
@@ -34,6 +35,7 @@ export const updateUserSchema = z.object({
   avatar: z.string().optional(),
   bio: z.string().optional(),
   location: z.string().optional(),
+  status: z.string().optional(),
   isSuspended: z.boolean().optional(),
   suspendedAt: z.union([z.string(), z.date(), z.null()]).optional(),
   verifiedCreator: z.boolean().optional()

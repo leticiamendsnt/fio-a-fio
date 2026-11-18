@@ -2,7 +2,7 @@ import { createApp } from './app.js';
 import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
 import { setupWebSocketServer } from './services/websocketService.js';
-import { ensureMockUsersInDB } from './scripts/mockUsers.js';
+import { ensureMockUsersInDB, ensureInitialReviewsInDB } from './scripts/mockUsers.js';
 
 const startServer = async () => {
   // Inicializa conexão com o MongoDB
@@ -10,6 +10,8 @@ const startServer = async () => {
   if (conn) {
     // Garante que os usuários mockados do README.md existam no banco para testes
     await ensureMockUsersInDB();
+    // Garante que a coleção Review exista e tenha avaliações de exemplo
+    await ensureInitialReviewsInDB();
   }
 
   const app = createApp();

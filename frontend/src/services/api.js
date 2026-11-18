@@ -7,13 +7,34 @@ const request = async (path, options) => {
   if (token) authHeaders['Authorization'] = `Bearer ${token}`;
   if (userId) authHeaders['x-user-id'] = userId;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...authHeaders, ...options?.headers },
-    ...options,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...authHeaders, ...options?.headers },
+      ...options,
+    });
+  } catch (networkError) {
+    const error = new Error(`Não foi possível conectar ao servidor (${API_BASE_URL}). Verifique se o backend está ligado.`);
+    error.isNetworkError = true;
+    throw error;
+  }
 
   if (!response.ok) {
-    throw new Error(`Falha na API (${response.status}) ao acessar ${path}`);
+    let errorMessage = `Falha na API (${response.status}) ao acessar ${path}`;
+    try {
+      const errData = await response.json();
+      if (errData?.message) {
+        errorMessage = errData.message;
+      } else if (errData?.error) {
+        errorMessage = errData.error;
+      }
+      if (Array.isArray(errData?.details) && errData.details.length > 0) {
+        errorMessage = errData.details.map((d) => d.message || d).join(', ');
+      }
+    } catch (_) {}
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    throw error;
   }
 
   return response.status === 204 ? null : response.json();
@@ -39,7 +60,11 @@ export const loginApi = async (email, password) => {
     }
     return data;
   } catch (err) {
-    // Fallback caso a API esteja em modo JSON Server legada
+    // Se o backend retornou um erro real (400, 401, 403, etc.), repassa a mensagem real
+    if (err.status) {
+      throw err;
+    }
+    // Fallback gracioso caso a API esteja em modo JSON Server legado offline
     const users = await getUsers();
     const user = users.find(
       (item) => item.email?.toLowerCase() === email.trim().toLowerCase() && (item.password ? item.password === password : false)
@@ -68,6 +93,10 @@ export const registerApi = async (userData) => {
     }
     return data;
   } catch (err) {
+    // Se o backend respondeu com erro de validação (400) ou conflito (409), repassa a mensagem real
+    if (err.status) {
+      throw err;
+    }
     // Fallback para JSON Server legado
     const createdUser = await createRecord('users', userData);
     return { user: createdUser };
@@ -98,7 +127,8 @@ export const toggleFollowUser = async (targetUserId, currentUserId) => {
 
 export const getUsers = () => get('users');
 export const getPosts = async ({ includeRemoved = false } = {}) => {
-  const [posts, comments, users] = await Promise.all([get('posts'), get('comments'), getUsers()]);
+  const queryParam = includeRemoved ? '?includeRemoved=true' : '';
+  const [posts, comments, users] = await Promise.all([get(`posts${queryParam}`), get('comments'), getUsers()]);
   const userById = new Map(users.map(user => [user.id, user]));
 
   return posts
@@ -179,5 +209,14 @@ export const getSalesReport = async () => {
   const [summary, recentSales] = await Promise.all([get('salesSummary'), get('sales')]);
   return { ...summary, recentSales };
 };
+
+export const createLessonReview = (lessonId, reviewData) =>
+  request(`/videoLessons/${lessonId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify(reviewData),
+  });
+
+export const getLessonReviews = (lessonId) =>
+  request(`/videoLessons/${lessonId}/reviews`);
 
 export const getAdminDashboard = () => get('adminDashboard');

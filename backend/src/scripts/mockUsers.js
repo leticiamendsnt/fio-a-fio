@@ -1,4 +1,5 @@
 import { User } from '../models/User.js';
+import { Review } from '../models/Review.js';
 
 export const README_MOCK_USERS = [
   {
@@ -86,5 +87,51 @@ export const ensureMockUsersInDB = async () => {
     }
   } catch (err) {
     console.warn('[MongoDB] Aviso ao verificar usuários mock no banco:', err.message);
+  }
+};
+
+/**
+ * Cria a coleção Review e insere dados iniciais caso ainda não existam no banco.
+ */
+export const ensureInitialReviewsInDB = async () => {
+  try {
+    const count = await Review.countDocuments();
+    if (count === 0) {
+      await Review.insertMany([
+        {
+          id: 'rev-1',
+          lessonId: 'aula-101',
+          userId: 'usr-1',
+          userName: 'Ana Silva',
+          userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          rating: 5,
+          comment: 'A explicação dos hexágonos é maravilhosa! Meu cardigan ficou impecável.',
+          createdAt: new Date()
+        },
+        {
+          id: 'rev-2',
+          lessonId: 'aula-101',
+          userId: 'usr-3',
+          userName: 'Júlia Crocheteira',
+          userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          rating: 5,
+          comment: 'Amei as dicas de tensão do ponto e a união invisível das costas!',
+          createdAt: new Date()
+        },
+        {
+          id: 'rev-3',
+          lessonId: 'aula-102',
+          userId: 'usr-1',
+          userName: 'Ana Silva',
+          userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          rating: 5,
+          comment: 'Fiz a bolsa com fio de malha e a base ficou super firme. Recomendo muito!',
+          createdAt: new Date()
+        }
+      ]);
+      console.log('[MongoDB] ✓ Coleção Review inicializada com avaliações de exemplo.');
+    }
+  } catch (err) {
+    console.warn('[MongoDB] Aviso ao inicializar avaliações:', err.message);
   }
 };

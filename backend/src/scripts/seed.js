@@ -7,6 +7,7 @@ import { Post } from '../models/Post.js';
 import { Comment } from '../models/Comment.js';
 import { Story } from '../models/Story.js';
 import { VideoLesson } from '../models/VideoLesson.js';
+import { Review } from '../models/Review.js';
 import { Material } from '../models/Material.js';
 import { Purchase } from '../models/Purchase.js';
 import { Sale } from '../models/Sale.js';
@@ -42,6 +43,7 @@ const seedDatabase = async () => {
       Comment.deleteMany({}),
       Story.deleteMany({}),
       VideoLesson.deleteMany({}),
+      Review.deleteMany({}),
       Material.deleteMany({}),
       Purchase.deleteMany({}),
       Sale.deleteMany({}),
@@ -86,6 +88,42 @@ const seedDatabase = async () => {
       await VideoLesson.insertMany(db.videoLessons);
       console.log(`[Seed] ✓ ${db.videoLessons.length} vídeo-aulas inseridas.`);
     }
+
+    // Inserção automática de avaliações iniciais de demonstração
+    const sampleReviews = [
+      {
+        id: 'rev-1',
+        lessonId: 'aula-101',
+        userId: 'usr-1',
+        userName: 'Ana Silva',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        rating: 5,
+        comment: 'A explicação dos hexágonos é maravilhosa! Meu cardigan ficou impecável.',
+        createdAt: new Date()
+      },
+      {
+        id: 'rev-2',
+        lessonId: 'aula-101',
+        userId: 'usr-3',
+        userName: 'Júlia Crocheteira',
+        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+        rating: 5,
+        comment: 'Amei as dicas de tensão do ponto e a união invisível das costas!',
+        createdAt: new Date()
+      },
+      {
+        id: 'rev-3',
+        lessonId: 'aula-102',
+        userId: 'usr-1',
+        userName: 'Ana Silva',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        rating: 5,
+        comment: 'Fiz a bolsa com fio de malha e a base ficou super firme. Recomendo muito!',
+        createdAt: new Date()
+      }
+    ];
+    await Review.insertMany(sampleReviews);
+    console.log(`[Seed] ✓ ${sampleReviews.length} avaliações iniciais inseridas na coleção Review.`);
 
     if (db.materials?.length) {
       await Material.insertMany(db.materials);

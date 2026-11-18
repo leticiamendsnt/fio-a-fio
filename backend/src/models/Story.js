@@ -10,7 +10,7 @@ const StorySchema = new mongoose.Schema(
     },
     authorId: {
       type: String,
-      required: true,
+      default: null,
       index: true
     },
     authorNameSnapshot: {
@@ -41,13 +41,17 @@ const StorySchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    createdAt: {
+      type: String,
+      default: 'Agora mesmo'
+    },
     expiresAt: {
       type: Date,
       default: () => new Date(Date.now() + 24 * 60 * 60 * 1000)
     }
   },
   {
-    timestamps: true
+    timestamps: { createdAt: false, updatedAt: true }
   }
 );
 

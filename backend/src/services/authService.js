@@ -77,6 +77,12 @@ export const authService = {
       throw error;
     }
 
+    if (user.isSuspended) {
+      const error = new Error('Esta conta está suspensa. Entre em contato com a equipe Fio a Fio.');
+      error.statusCode = 403;
+      throw error;
+    }
+
     const token = generateToken({
       id: user.id,
       email: user.email,

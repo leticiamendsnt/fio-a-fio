@@ -102,33 +102,33 @@ export function App() {
               />
 
               {/* Student */}
-              <Route path="biblioteca" element={<StudentLibraryPage />} />
-              <Route path="assistir/:id" element={<WatchVideoPage />} />
-              <Route path="avaliacao/:id" element={<RateVideoPage />} />
-              <Route path="compras" element={<PurchaseHistoryPage />} />
+              <Route path="biblioteca" element={<ProtectedRoute><StudentLibraryPage /></ProtectedRoute>} />
+              <Route path="assistir/:id" element={<ProtectedRoute><WatchVideoPage /></ProtectedRoute>} />
+              <Route path="avaliacao/:id" element={<ProtectedRoute><RateVideoPage /></ProtectedRoute>} />
+              <Route path="compras" element={<ProtectedRoute><PurchaseHistoryPage /></ProtectedRoute>} />
 
               {/* Creator */}
-              <Route path="criador/videoaulas" element={<ManageVideosPage />} />
+              <Route path="criador/videoaulas" element={<ProtectedRoute requiredRole={["creator", "admin"]}><ManageVideosPage /></ProtectedRoute>} />
               <Route
                 path="criador/videoaulas/cadastrar"
-                element={<CreateVideoPage />}
+                element={<ProtectedRoute requiredRole={["creator", "admin"]}><CreateVideoPage /></ProtectedRoute>}
               />
               <Route
                 path="criador/videoaulas/editar/:id"
-                element={<EditVideoPage />}
+                element={<ProtectedRoute requiredRole={["creator", "admin"]}><EditVideoPage /></ProtectedRoute>}
               />
-              <Route path="criador/vendas" element={<SalesReportPage />} />
+              <Route path="criador/vendas" element={<ProtectedRoute requiredRole={["creator", "admin"]}><SalesReportPage /></ProtectedRoute>} />
 
               {/* Admin */}
-              <Route path="admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="admin/usuarios" element={<UserManagementPage />} />
+              <Route path="admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboardPage /></ProtectedRoute>} />
+              <Route path="admin/usuarios" element={<ProtectedRoute requiredRole="admin"><UserManagementPage /></ProtectedRoute>} />
               <Route
                 path="admin/publicacoes"
-                element={<PostModerationPage />}
+                element={<ProtectedRoute requiredRole="admin"><PostModerationPage /></ProtectedRoute>}
               />
               <Route
                 path="admin/conteudos"
-                element={<ContentManagementPage />}
+                element={<ProtectedRoute requiredRole="admin"><ContentManagementPage /></ProtectedRoute>}
               />
 
               {/* Fallback */}

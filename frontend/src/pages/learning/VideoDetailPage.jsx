@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getVideoLessons } from '../../services/api';
+import { getVideoLessons, getLessonReviews } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { useRole } from '../../context/RoleContext';
 import { Card, CardBody } from '../../components/ui/Card';
@@ -8,13 +8,14 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StarRating } from '../../components/ui/StarRating';
-import { ArrowLeft, Clock, ShoppingCart, CheckCircle, PlayCircle, Award, Edit } from 'lucide-react';
+import { ArrowLeft, Clock, ShoppingCart, CheckCircle, PlayCircle, Award, Edit, Star } from 'lucide-react';
 
 export const VideoDetailPage = () => {
   const { id } = useParams();
   const { currentUser, currentRole } = useRole();
   const { data: lessons = [] } = useApiData('videoLessons', getVideoLessons);
   const lesson = lessons.find((v) => v.id === id) || lessons[0];
+  const { data: reviews = [] } = useApiData(['lessonReviews', lesson?.id], () => getLessonReviews(lesson?.id));
 
   if (!lesson) return <p role="status" className="p-8 text-center text-sm">Carregando informações da aula…</p>;
 
@@ -108,6 +109,42 @@ export const VideoDetailPage = () => {
                   </div>
                 </div>
               )}
+
+              {/* Avaliações reais gravadas no MongoDB */}
+              <div className="space-y-4 pt-4 border-t border-[#E8CCD4]/60">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-[#251D20] uppercase tracking-wider flex items-center gap-2">
+                    <Star size={16} className="text-amber-500 fill-amber-500" />
+                    Avaliações das Alunas ({reviews.length})
+                  </h3>
+                  <Link to={`/avaliacao/${lesson.id}`}>
+                    <Button variant="outline" size="sm" className="text-xs font-bold border-[#E8CCD4] text-[#B94F70] hover:bg-[#F6DDE5]">
+                      + Avaliar esta Aula
+                    </Button>
+                  </Link>
+                </div>
+
+                {reviews.length === 0 ? (
+                  <p className="text-xs text-[#715B62] italic bg-[#F8E9ED]/50 p-4 rounded-2xl border border-[#E8CCD4]">
+                    Esta aula ainda não possui avaliações no banco de dados. Seja a primeira aluna a avaliar! 🧶
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {reviews.map((rev) => (
+                      <div key={rev.id} className="p-3.5 bg-[#F8E9ED]/40 rounded-2xl border border-[#E8CCD4] space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Avatar src={rev.userAvatar} alt={rev.userName} size="xs" />
+                            <span className="text-xs font-bold text-[#251D20]">{rev.userName}</span>
+                          </div>
+                          <StarRating rating={rev.rating} size={14} />
+                        </div>
+                        <p className="text-xs text-[#715B62] pl-7">{rev.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardBody>
           </Card>
         </div>

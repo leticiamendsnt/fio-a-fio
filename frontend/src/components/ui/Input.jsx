@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
-export const Input = ({
+export const Input = forwardRef(({
   label,
   error,
   helperText,
@@ -9,7 +9,7 @@ export const Input = ({
   id,
   type = 'text',
   ...props
-}) => {
+}, ref) => {
   const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
   return (
@@ -26,6 +26,7 @@ export const Input = ({
           </div>
         )}
         <input
+          ref={ref}
           id={inputId}
           type={type}
           className={`w-full bg-white border ${
@@ -38,4 +39,6 @@ export const Input = ({
       {helperText && !error && <span className="text-xs text-zinc-500">{helperText}</span>}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';

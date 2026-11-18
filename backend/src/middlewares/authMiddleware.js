@@ -1,6 +1,7 @@
 import { verifyToken } from '../utils/jwt.js';
 import { User } from '../models/User.js';
 import { findByIdOrCustomId } from '../utils/helpers.js';
+import { env } from '../config/env.js';
 
 /**
  * Middleware para exigir autenticação via JWT ou header de desenvolvimento x-user-id.
@@ -25,9 +26,10 @@ export const requireAuth = async (req, res, next) => {
       }
     }
 
-    // Suporte a x-user-id para requisições do frontend existente que ainda usam switchRole/user ID
+    // Suporte a x-user-id exclusivamente em ambiente de desenvolvimento ou testes
+    const isDevOrTest = ['development', 'test'].includes(env.NODE_ENV || 'development');
     const customUserId = req.headers['x-user-id'];
-    if (customUserId) {
+    if (isDevOrTest && customUserId) {
       const user = await findByIdOrCustomId(User, customUserId);
       if (user) {
         req.user = user;
@@ -67,8 +69,10 @@ export const optionalAuth = async (req, res, next) => {
       }
     }
 
+    // Em dev/test, permite também ler perfil associado via x-user-id se presente
+    const isDevOrTest = ['development', 'test'].includes(env.NODE_ENV || 'development');
     const customUserId = req.headers['x-user-id'];
-    if (customUserId) {
+    if (isDevOrTest && customUserId) {
       const user = await findByIdOrCustomId(User, customUserId);
       if (user) {
         req.user = user;

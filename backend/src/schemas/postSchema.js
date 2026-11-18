@@ -12,6 +12,7 @@ export const createPostSchema = z.object({
   isLiked: z.boolean().optional(),
   commentsCount: z.number().optional(),
   timeAgo: z.string().optional(),
+  createdAt: z.union([z.string(), z.date()]).optional(),
   authorId: z.string().optional(),
   authorSnapshot: z
     .object({

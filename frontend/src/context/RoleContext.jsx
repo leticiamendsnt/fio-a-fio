@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getUsers } from '../services/api';
 import { useApiData } from '../hooks/useApiData';
 
@@ -18,6 +18,13 @@ export const RoleProvider = ({ children }) => {
     username: 'visitante'
   };
 
+  useEffect(() => {
+    if (currentUser?.id && !currentUserId && currentRole !== 'guest') {
+      setCurrentUserId(currentUser.id);
+      localStorage.setItem('fioafio_userId', currentUser.id);
+    }
+  }, [currentUser?.id, currentUserId, currentRole]);
+
   const isLoggedIn = currentRole !== 'guest' && Boolean(currentUser?.id);
 
   const switchRole = (role) => {
@@ -28,6 +35,8 @@ export const RoleProvider = ({ children }) => {
       if (roleUser) {
         setCurrentUserId(roleUser.id);
         localStorage.setItem('fioafio_userId', roleUser.id);
+        // Remove token JWT antigo ao alternar papel para usar a identidade selecionada
+        localStorage.removeItem('fioafio_token');
       }
     } else {
       setCurrentUserId(null);
