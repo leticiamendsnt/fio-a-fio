@@ -20,5 +20,7 @@ export const createMessageSchema = z.object({
   text: z.string({ required_error: 'O texto da mensagem é obrigatório.' }).min(1, 'A mensagem não pode ser vazia.').trim(),
   senderId: z.string().optional(),
   time: z.string().optional(),
+  timestamp: z.string().optional(),
+  read: z.boolean().optional(),
   isOwn: z.boolean().optional()
 });

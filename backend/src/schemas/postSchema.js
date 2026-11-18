@@ -6,6 +6,12 @@ export const createPostSchema = z.object({
   content: z.string({ required_error: 'O conteúdo é obrigatório.' }).min(5, 'O conteúdo deve ter pelo menos 5 caracteres.').trim(),
   category: z.string().optional().default('Dicas & Tutoriais'),
   image: z.string().optional().default(''),
+  imageName: z.string().optional(),
+  moderationStatus: z.enum(['active', 'approved', 'pending', 'removed']).optional(),
+  likesCount: z.number().optional(),
+  isLiked: z.boolean().optional(),
+  commentsCount: z.number().optional(),
+  timeAgo: z.string().optional(),
   authorId: z.string().optional(),
   authorSnapshot: z
     .object({
@@ -22,5 +28,7 @@ export const updatePostSchema = z.object({
   content: z.string().min(5, 'O conteúdo deve ter pelo menos 5 caracteres.').trim().optional(),
   category: z.string().optional(),
   image: z.string().optional(),
-  moderationStatus: z.enum(['approved', 'pending', 'removed']).optional()
+  imageName: z.string().optional(),
+  moderationStatus: z.enum(['active', 'approved', 'pending', 'removed']).optional(),
+  moderatedAt: z.union([z.string(), z.date(), z.null()]).optional()
 });

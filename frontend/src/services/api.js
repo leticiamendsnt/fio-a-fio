@@ -25,6 +25,55 @@ export const createRecord = (resource, data) => request(`/${resource}`, { method
 export const updateRecord = (resource, id, data) => request(`/${resource}/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteRecord = (resource, id) => request(`/${resource}/${id}`, { method: 'DELETE' });
 
+export const loginApi = async (email, password) => {
+  try {
+    const data = await request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+    if (data?.token) {
+      localStorage.setItem('fioafio_token', data.token);
+    }
+    if (data?.user?.id) {
+      localStorage.setItem('fioafio_userId', data.user.id);
+    }
+    return data;
+  } catch (err) {
+    // Fallback caso a API esteja em modo JSON Server legada
+    const users = await getUsers();
+    const user = users.find(
+      (item) => item.email?.toLowerCase() === email.trim().toLowerCase() && (item.password ? item.password === password : false)
+    );
+    if (!user) {
+      throw new Error(err.message || 'E-mail ou senha inválidos.');
+    }
+    if (user.isSuspended) {
+      throw new Error('Esta conta está suspensa. Entre em contato com a equipe Fio a Fio.');
+    }
+    return { user };
+  }
+};
+
+export const registerApi = async (userData) => {
+  try {
+    const data = await request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    if (data?.token) {
+      localStorage.setItem('fioafio_token', data.token);
+    }
+    if (data?.user?.id) {
+      localStorage.setItem('fioafio_userId', data.user.id);
+    }
+    return data;
+  } catch (err) {
+    // Fallback para JSON Server legado
+    const createdUser = await createRecord('users', userData);
+    return { user: createdUser };
+  }
+};
+
 export const likePost = async (postId, userId) => {
   try {
     return await request(`/posts/${postId}/like`, {

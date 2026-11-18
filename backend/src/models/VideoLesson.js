@@ -100,6 +100,19 @@ const VideoLessonSchema = new mongoose.Schema(
     modules: {
       type: [ModuleSchema],
       default: []
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    moderationStatus: {
+      type: String,
+      enum: ['approved', 'pending', 'removed'],
+      default: 'approved'
+    },
+    moderatedAt: {
+      type: Date,
+      default: null
     }
   },
   {

@@ -37,6 +37,10 @@ const PostSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    imageName: {
+      type: String,
+      default: ''
+    },
     likesCount: {
       type: Number,
       default: 0
@@ -59,9 +63,13 @@ const PostSchema = new mongoose.Schema(
     },
     moderationStatus: {
       type: String,
-      enum: ['active', 'pending', 'removed'],
-      default: 'active',
+      enum: ['active', 'approved', 'pending', 'removed'],
+      default: 'approved',
       index: true
+    },
+    moderatedAt: {
+      type: Date,
+      default: null
     }
   },
   {

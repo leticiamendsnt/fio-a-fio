@@ -82,6 +82,14 @@ const UserSchema = new mongoose.Schema(
       type: String,
       enum: ['Ativo', 'Em Análise', 'Suspenso'],
       default: 'Ativo'
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false
+    },
+    suspendedAt: {
+      type: Date,
+      default: null
     }
   },
   {

@@ -10,7 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import { getUsers } from '../../services/api';
+import { loginApi } from '../../services/api';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'O e-mail é obrigatório.').email('Formato de e-mail inválido.'),
@@ -38,20 +38,15 @@ export const LoginPage = () => {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }) => {
-      const users = await getUsers();
-      const user = users.find(
-        (item) => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password
-      );
-      if (!user) {
-        throw new Error('E-mail ou senha inválidos.');
-      }
+      const response = await loginApi(email, password);
+      const user = response?.user || response;
       if (user.isSuspended) {
         throw new Error('Esta conta está suspensa. Entre em contato com a equipe Fio a Fio.');
       }
-      return { user, users };
+      return { user };
     },
-    onSuccess: ({ user, users }) => {
-      queryClient.setQueryData(['users'], users);
+    onSuccess: ({ user }) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       selectUser(user);
       setError('');
       setMessage('Login realizado com carinho! Bem-vinda de volta 🧶');
@@ -59,7 +54,7 @@ export const LoginPage = () => {
     },
     onError: (loginError) => {
       setMessage('');
-      setError(loginError.message || 'Não foi possível acessar as contas.');
+      setError(loginError.message || 'Não foi possível acessar a conta.');
     },
   });
 

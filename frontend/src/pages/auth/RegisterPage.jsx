@@ -10,7 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import { createRecord, getUsers } from '../../services/api';
+import { registerApi } from '../../services/api';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -47,33 +47,25 @@ export const RegisterPage = () => {
 
   const registerMutation = useMutation({
     mutationFn: async (formData) => {
-      const users = await getUsers();
       const username = formData.username.trim().replace(/^@/, '');
-      if (users.some((user) => user.email.toLowerCase() === formData.email.trim().toLowerCase())) {
-        throw new Error('Este e-mail já está cadastrado.');
-      }
-      if (users.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
-        throw new Error('Este nome de usuário já está em uso.');
-      }
-      const createdUser = await createRecord('users', {
+      const response = await registerApi({
         name: formData.name.trim(),
         username,
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: formData.isCreator ? 'creator' : 'user',
-        joinedDate: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date()),
+        isCreator: formData.isCreator,
       });
-      return { createdUser, users };
+      return { createdUser: response.user || response };
     },
-    onSuccess: ({ createdUser, users }) => {
-      queryClient.setQueryData(['users'], [...users, createdUser]);
+    onSuccess: ({ createdUser }) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       selectUser(createdUser);
       setMessage('Conta criada com carinho! Redirecionando...');
       setTimeout(() => navigate('/feed'), 800);
     },
     onError: (createError) => {
-      setError(createError.message || 'Não foi possível criar a conta. Verifique se o JSON Server está ativo.');
+      setError(createError.message || 'Não foi possível criar a conta.');
     },
   });
 

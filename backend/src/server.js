@@ -19,6 +19,16 @@ const startServer = async () => {
     console.log(`🧵 ===============================================\n`);
   });
 
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [Servidor] A porta ${env.PORT} já está em uso por outro processo!`);
+      console.error(`👉 DICA: Finalize o processo que está usando a porta ${env.PORT} ou execute:`);
+      console.error(`   netstat -ano | findstr :${env.PORT}   (e depois taskkill /PID <PID> /F)\n`);
+    } else {
+      console.error('[Servidor] Erro no servidor HTTP:', err.message);
+    }
+  });
+
   // Inicializa o servidor WebSocket de mensagens em tempo real
   setupWebSocketServer(server);
 

@@ -13,6 +13,9 @@ export const createVideoLessonSchema = z.object({
   videoUrl: z.string().optional(),
   creatorId: z.string().optional(),
   creatorBio: z.string().optional(),
+  isActive: z.boolean().optional(),
+  moderationStatus: z.enum(['active', 'approved', 'pending', 'removed']).optional(),
+  moderatedAt: z.union([z.string(), z.date(), z.null()]).optional(),
   modules: z
     .array(
       z.object({
@@ -42,5 +45,7 @@ export const updateVideoLessonSchema = z.object({
   description: z.string().min(5, 'A descrição deve ter pelo menos 5 caracteres.').trim().optional(),
   thumbnail: z.string().optional(),
   videoUrl: z.string().optional(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  moderationStatus: z.enum(['active', 'approved', 'pending', 'removed']).optional(),
+  moderatedAt: z.union([z.string(), z.date(), z.null()]).optional()
 });

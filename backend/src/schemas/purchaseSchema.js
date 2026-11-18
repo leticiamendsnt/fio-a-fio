@@ -13,5 +13,6 @@ export const createPurchaseSchema = z.object({
 
 export const updatePurchaseSchema = z.object({
   lessonProgressPercent: z.number().min(0).max(100).optional(),
-  status: z.enum(['Concluído', 'Pendente', 'Cancelado']).optional()
+  status: z.enum(['Concluído', 'Pendente', 'Cancelado']).optional(),
+  cancelledAt: z.string().or(z.date()).optional()
 });
