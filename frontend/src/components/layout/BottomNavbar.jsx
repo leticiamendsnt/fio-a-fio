@@ -23,6 +23,18 @@ export const BottomNavbar = () => {
   }
 
   const getNavItems = () => {
+    const isLogged = currentRole !== 'guest' && Boolean(currentUser?.id);
+
+    if (!isLogged) {
+      return [
+        { to: '/', label: 'Início', icon: Home },
+        { to: '/pesquisa', label: 'Explorar', icon: Search },
+        { to: '/videoaulas', label: 'Aulas', icon: Video },
+        { to: '/materiais', label: 'Materiais', icon: BookOpen },
+        { to: '/login', label: 'Entrar', icon: User },
+      ];
+    }
+
     if (currentRole === 'admin') {
       return [
         { to: '/admin/dashboard', label: 'Painel', icon: ShieldAlert },
@@ -44,7 +56,7 @@ export const BottomNavbar = () => {
     }
 
     return [
-      { to: currentRole === 'guest' ? '/' : '/feed', label: 'Feed', icon: Home },
+      { to: '/feed', label: 'Feed', icon: Home },
       { to: '/pesquisa', label: 'Pesquisar', icon: Search },
       { to: '/chat', label: 'Mensagens', icon: MessageCircle, badge: totalUnreadCount },
       { to: '/videoaulas', label: 'Aulas', icon: Video },

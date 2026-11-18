@@ -12,13 +12,16 @@ import {
   Video,
   Home,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  LogOut
 } from 'lucide-react';
 
 export const Navbar = () => {
-  const { currentRole, currentUser } = useRole();
+  const { currentRole, currentUser, logout } = useRole();
   const location = useLocation();
   const { totalUnreadCount } = useChat();
+
+  const isLogged = currentRole !== 'guest' && Boolean(currentUser?.id);
 
   return (
     <header className="sticky top-0 z-40 w-full glass-header border-b border-[#E8CCD4] shadow-2xs transition-all duration-300">
@@ -116,6 +119,21 @@ export const Navbar = () => {
                 <span>Painel Admin</span>
               </Link>
             )}
+
+            {/* Link para Perfil na barra de navegação exibido apenas para usuário logado */}
+            {isLogged && (
+              <Link
+                to="/perfil"
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  location.pathname === '/perfil'
+                    ? 'bg-[#B94F70] text-white shadow-xs'
+                    : 'text-[#251D20] hover:text-[#B94F70] hover:bg-white/60'
+                }`}
+              >
+                <User size={15} />
+                <span>Perfil</span>
+              </Link>
+            )}
           </nav>
 
           {/* Right Header Actions */}
@@ -147,7 +165,7 @@ export const Navbar = () => {
               )}
             </Link>
 
-            {currentRole === 'guest' ? (
+            {!isLogged ? (
               <div className="flex items-center gap-2">
                 <Link to="/login">
                   <Button variant="ghost" size="sm" className="rounded-full text-xs font-bold text-[#B94F70]">Entrar</Button>
@@ -157,18 +175,28 @@ export const Navbar = () => {
                 </Link>
               </div>
             ) : (
-              <Link
-                to="/perfil"
-                className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all border ${
-                  location.pathname === '/perfil'
-                    ? 'bg-[#B94F70] text-white border-[#B94F70] shadow-2xs'
-                    : 'bg-white text-[#251D20] hover:bg-[#F6DDE5] hover:text-[#B94F70] border-[#E8CCD4]'
-                }`}
-                title={`Logado como: ${currentUser?.name || 'Perfil'}`}
-              >
-                <User size={15} />
-                <span>{currentUser?.name ? currentUser.name.split(' ')[0] : 'Perfil'}</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/perfil"
+                  className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all border ${
+                    location.pathname === '/perfil'
+                      ? 'bg-[#B94F70] text-white border-[#B94F70] shadow-2xs'
+                      : 'bg-white text-[#251D20] hover:bg-[#F6DDE5] hover:text-[#B94F70] border-[#E8CCD4]'
+                  }`}
+                  title={`Logado como: ${currentUser?.name || 'Perfil'}`}
+                >
+                  <User size={15} />
+                  <span>{currentUser?.name ? currentUser.name.split(' ')[0] : 'Perfil'}</span>
+                </Link>
+                <button
+                  onClick={logout}
+                  className="hidden sm:flex p-2 text-[#715B62] hover:text-[#B94F70] hover:bg-[#F6DDE5] rounded-full transition-all"
+                  title="Sair da conta"
+                  aria-label="Sair"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
             )}
           </div>
         </div>

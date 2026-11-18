@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link, Navigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRole } from '../../context/RoleContext';
 import { updateRecord, deleteRecord } from '../../services/api';
@@ -13,6 +13,10 @@ export const EditProfilePage = () => {
   const [searchParams] = useSearchParams();
   const { currentUser, currentRole, updateCurrentRole, selectUser } = useRole();
   const queryClient = useQueryClient();
+
+  if (currentRole === 'guest' || !currentUser?.id) {
+    return <Navigate to="/login" replace />;
+  }
 
   const [name, setName] = useState(currentUser.name || '');
   const [bio, setBio] = useState(currentUser.bio || '');

@@ -48,6 +48,7 @@ import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { PersistedUserManagementPage as UserManagementPage } from "./pages/admin/PersistedUserManagementPage";
 import { PersistedPostModerationPage as PostModerationPage } from "./pages/admin/PersistedPostModerationPage";
 import { PersistedContentManagementPage as ContentManagementPage } from "./pages/admin/PersistedContentManagementPage";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 export function App() {
   return (
@@ -67,8 +68,22 @@ export function App() {
               <Route path="publicacao/criar" element={<CreatePostPage />} />
               <Route path="stories" element={<StoriesPage />} />
               <Route path="stories/criar" element={<CreateStoryPage />} />
-              <Route path="perfil" element={<ProfilePage />} />
-              <Route path="perfil/editar" element={<EditProfilePage />} />
+              <Route
+                path="perfil"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="perfil/editar"
+                element={
+                  <ProtectedRoute>
+                    <EditProfilePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="pesquisa" element={<SearchPage />} />
               <Route path="chat" element={<ChatPage />} />
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ const loginSchema = z.object({
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectUser } = useRole();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
@@ -50,7 +51,8 @@ export const LoginPage = () => {
       selectUser(user);
       setError('');
       setMessage('Login realizado com carinho! Bem-vinda de volta 🧶');
-      setTimeout(() => navigate('/feed'), 600);
+      const destination = location.state?.from?.pathname || '/perfil';
+      setTimeout(() => navigate(destination), 600);
     },
     onError: (loginError) => {
       setMessage('');

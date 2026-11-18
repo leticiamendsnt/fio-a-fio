@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams, useNavigate, Link, Navigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRole } from "../../context/RoleContext";
 import { useChat } from "../../context/ApiChatContext";
@@ -35,11 +35,15 @@ import {
 } from "lucide-react";
 
 export const ProfilePage = () => {
-  const { currentUser } = useRole();
+  const { currentUser, currentRole } = useRole();
   const { getOrCreateConversationWithUser } = useChat();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  if (currentRole === 'guest' || !currentUser?.id) {
+    return <Navigate to="/login" replace />;
+  }
   const { data: users = [] } = useApiData("users", getUsers);
   const { data: posts = [] } = useApiData("posts", getPosts);
   const { data: videoLessons = [] } = useApiData(
